@@ -1,0 +1,3094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Diwali Dash</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 30%, #3a1253 0%, #12051f 70%);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      color: #fff5d6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+    }
+
+    #game-wrapper {
+      position: relative;
+      width: min(96vw, calc(92vh * (16 / 9)));
+      aspect-ratio: 16 / 9;
+      max-width: 1152px;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.75),
+        0 0 0 2px rgba(255, 206, 107, 0.45),
+        0 0 45px rgba(255, 145, 45, 0.25);
+      background: #140521;
+      container-type: inline-size;
+    }
+
+    #game-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    /* ------------ HUD ------------ */
+    #hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: clamp(42px, 7.5cqw, 62px);
+      padding: 0 clamp(12px, 2cqw, 24px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(16, 4, 28, 0.86) 0%, rgba(16, 4, 28, 0.42) 75%, rgba(16, 4, 28, 0) 100%);
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .hud-left, .hud-right {
+      display: flex;
+      align-items: center;
+      gap: clamp(8px, 1.4cqw, 16px);
+      pointer-events: auto;
+    }
+
+    .hud-item {
+      background: rgba(31, 9, 49, 0.78);
+      border: 1.5px solid rgba(255, 206, 105, 0.42);
+      padding: clamp(4px, 0.7cqw, 7px) clamp(10px, 1.4cqw, 15px);
+      border-radius: 999px;
+      font-size: clamp(11px, 1.45cqw, 15px);
+      font-weight: 800;
+      color: #ffe9b5;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    .hud-item span#score {
+      color: #ffd35c;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hearts {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .heart-svg {
+      width: clamp(13px, 1.7cqw, 18px);
+      height: clamp(13px, 1.7cqw, 18px);
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      filter: drop-shadow(0 0 5px rgba(255, 77, 109, 0.6));
+    }
+
+    .heart-svg.lost {
+      opacity: 0.22;
+      transform: scale(0.78);
+      filter: none;
+    }
+
+    .hud-btn {
+      background: rgba(38, 11, 58, 0.85);
+      color: #ffe8b3;
+      border: 1.5px solid rgba(255, 206, 105, 0.55);
+      padding: clamp(4px, 0.7cqw, 7px) clamp(10px, 1.3cqw, 14px);
+      border-radius: 999px;
+      font-size: clamp(11px, 1.35cqw, 14px);
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .hud-btn:hover {
+      background: rgba(65, 19, 95, 0.92);
+      border-color: #ffd875;
+      transform: translateY(-1px);
+    }
+
+    .hud-progress {
+      width: clamp(170px, 28cqw, 290px);
+      background: rgba(27, 7, 43, 0.82);
+      border: 1.5px solid rgba(255, 206, 105, 0.45);
+      border-radius: 999px;
+      padding: clamp(4px, 0.65cqw, 7px) clamp(10px, 1.4cqw, 14px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .hud-progress.hidden {
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: clamp(8.5px, 1.05cqw, 11px);
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      color: #ffd884;
+      margin-bottom: 3px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: clamp(5px, 0.8cqw, 8px);
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    #festival-progress-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #ff9929 0%, #ffd859 55%, #fff5b8 100%);
+      border-radius: 999px;
+      box-shadow: 0 0 10px rgba(255, 205, 85, 0.85);
+      transition: width 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Interactive Firework Lighting Banner */
+    #firework-banner {
+      position: absolute;
+      top: clamp(48px, 8cqw, 66px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(28, 7, 44, 0.9);
+      border: 1.5px solid rgba(255, 212, 105, 0.82);
+      color: #fff5d6;
+      padding: clamp(5px, 0.8cqw, 8px) clamp(14px, 2cqw, 22px);
+      border-radius: 999px;
+      font-size: clamp(10.5px, 1.4cqw, 14.5px);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55), 0 0 18px rgba(255, 175, 55, 0.45);
+      pointer-events: none;
+      z-index: 6;
+      white-space: nowrap;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    #firework-banner.hidden {
+      opacity: 0;
+      transform: translate(-50%, -10px);
+    }
+
+    #lit-count {
+      color: #ffd35c;
+    }
+
+    /* ------------ BOTTOM VIRTUAL JOYSTICK ------------ */
+    #joystick-zone {
+      position: absolute;
+      bottom: 4%;
+      right: 3.5%;
+      width: clamp(86px, 14.5cqw, 132px);
+      height: clamp(86px, 14.5cqw, 132px);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 209, 102, 0.18) 0%, rgba(20, 6, 40, 0.68) 80%);
+      border: 2px solid rgba(255, 209, 102, 0.6);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(255, 180, 60, 0.22);
+      touch-action: none;
+      z-index: 8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    #joystick-zone.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.85);
+    }
+
+    #joystick-zone::after {
+      content: "MOVE";
+      position: absolute;
+      bottom: -18px;
+      font-size: clamp(8px, 1.05cqw, 11px);
+      letter-spacing: 0.14em;
+      color: rgba(255, 235, 175, 0.82);
+      font-weight: 800;
+      pointer-events: none;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    #joystick-knob {
+      width: 42%;
+      height: 42%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff3a8, #ff9f1c 65%, #d65a00);
+      border: 2px solid #ffffff;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.65), 0 0 12px rgba(255, 180, 50, 0.75);
+      pointer-events: none;
+      transform: translate(0px, 0px);
+      transition: transform 0.04s linear;
+    }
+
+    /* ------------ OVERLAYS ------------ */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 35%, rgba(44, 13, 68, 0.86) 0%, rgba(14, 3, 24, 0.94) 100%);
+      backdrop-filter: blur(7px);
+      -webkit-backdrop-filter: blur(7px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(8px, 1.5cqw, 15px);
+      padding: clamp(14px, 2.5cqw, 28px);
+      text-align: center;
+      z-index: 10;
+      transition: opacity 0.28s ease;
+    }
+
+    .overlay.victory-overlay {
+      background: radial-gradient(circle at 50% 35%, rgba(44, 13, 68, 0.68) 0%, rgba(14, 3, 24, 0.82) 100%);
+      backdrop-filter: blur(4px);
+    }
+
+    .overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .logo-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .logo-diya-svg {
+      width: clamp(46px, 6.8cqw, 72px);
+      height: auto;
+      filter: drop-shadow(0 0 16px rgba(255, 170, 45, 0.85));
+      animation: floatDiya 2.6s ease-in-out infinite;
+    }
+
+    @keyframes floatDiya {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-4px) scale(1.04); }
+    }
+
+    .overlay h1 {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: clamp(24px, 4.4cqw, 46px);
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      background: linear-gradient(180deg, #fff8d6 0%, #ffd25a 52%, #ff8b26 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 4px 16px rgba(255, 145, 35, 0.45));
+      line-height: 1.1;
+    }
+
+    .overlay p {
+      font-size: clamp(11.5px, 1.55cqw, 16px);
+      color: #ffe9be;
+      max-width: 540px;
+      line-height: 1.4;
+    }
+
+    .overlay p.hint {
+      font-size: clamp(9.5px, 1.25cqw, 13px);
+      opacity: 0.82;
+      color: #ffd88a;
+    }
+
+    .instructions-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: rgba(24, 6, 38, 0.72);
+      border: 1px solid rgba(255, 200, 95, 0.38);
+      border-radius: 14px;
+      padding: clamp(7px, 1.2cqw, 12px) clamp(14px, 2.2cqw, 22px);
+      font-size: clamp(10.5px, 1.35cqw, 14px);
+      color: #ffe8b8;
+      margin: 2px 0;
+    }
+
+    .instructions-list strong {
+      color: #ffd261;
+    }
+
+    .mode-picker {
+      display: flex;
+      gap: clamp(6px, 1cqw, 10px);
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 2px 0;
+    }
+
+    .mode-btn {
+      background: rgba(30, 8, 48, 0.78);
+      color: #ffe7b3;
+      border: 1.5px solid rgba(255, 195, 90, 0.45);
+      padding: clamp(5px, 0.85cqw, 8px) clamp(12px, 1.8cqw, 18px);
+      border-radius: 999px;
+      font-size: clamp(11px, 1.45cqw, 14.5px);
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .mode-btn:hover {
+      border-color: #ffd36a;
+      transform: translateY(-1px);
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(180deg, #ffd86b, #ff8828);
+      color: #2a061c;
+      border-color: #fff2bd;
+      box-shadow: 0 0 14px rgba(255, 175, 55, 0.65);
+    }
+
+    .primary-cta-btn {
+      background: linear-gradient(180deg, #ffe27a 0%, #ffa424 55%, #e85d12 100%);
+      color: #290617;
+      border: 2px solid #fff3c4;
+      padding: clamp(8px, 1.3cqw, 13px) clamp(22px, 3.4cqw, 36px);
+      border-radius: 999px;
+      font-size: clamp(13px, 1.8cqw, 18px);
+      font-weight: 800;
+      font-family: inherit;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow:
+        0 8px 24px rgba(232, 93, 18, 0.55),
+        0 0 22px rgba(255, 208, 92, 0.65);
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
+      margin-top: 2px;
+    }
+
+    .primary-cta-btn:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow:
+        0 12px 28px rgba(232, 93, 18, 0.7),
+        0 0 28px rgba(255, 220, 115, 0.85);
+    }
+
+    .primary-cta-btn:active {
+      transform: translateY(0px) scale(0.99);
+    }
+
+    .victory-eyebrow {
+      font-size: clamp(10px, 1.3cqw, 13px);
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      color: #ffd46b;
+      text-transform: uppercase;
+    }
+
+    .victory-emblem {
+      font-size: clamp(18px, 2.6cqw, 28px);
+      color: #ffe28a;
+      text-shadow: 0 0 14px rgba(255, 195, 70, 0.9);
+    }
+
+    .victory-score {
+      background: rgba(25, 6, 40, 0.78);
+      border: 1.5px solid rgba(255, 208, 102, 0.55);
+      border-radius: 16px;
+      padding: clamp(6px, 1cqw, 10px) clamp(18px, 2.8cqw, 28px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .victory-score span {
+      font-size: clamp(9px, 1.1cqw, 11.5px);
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: #ffcf70;
+    }
+
+    .victory-score strong {
+      font-size: clamp(20px, 3.2cqw, 34px);
+      font-weight: 900;
+      color: #fff4c2;
+    }
+
+    /* ------------ AVATAR CUSTOMIZER & PHOTO UPLOAD ------------ */
+    .avatar-setup-card {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(10px, 1.8cqw, 18px);
+      background: rgba(36, 12, 56, 0.75);
+      border: 1.5px solid rgba(255, 206, 105, 0.45);
+      border-radius: 18px;
+      padding: clamp(6px, 1cqw, 10px) clamp(12px, 2cqw, 20px);
+      margin: 4px 0 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    .avatar-picker-label {
+      cursor: pointer;
+      display: inline-block;
+      transition: transform 0.15s ease;
+    }
+    .avatar-picker-label:hover {
+      transform: scale(1.08);
+    }
+
+    .avatar-face-circle {
+      position: relative;
+      width: clamp(48px, 6.5cqw, 62px);
+      height: clamp(48px, 6.5cqw, 62px);
+      border-radius: 50%;
+      border: 2.5px solid #ffd166;
+      background: radial-gradient(circle, #ff9f1c 0%, #b43a12 100%);
+      box-shadow: 0 0 14px rgba(255, 209, 102, 0.65);
+      overflow: visible;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .avatar-img-preview {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .avatar-placeholder-emoji {
+      font-size: clamp(20px, 3.2cqw, 28px);
+    }
+
+    .avatar-cam-badge {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      background: #e6195a;
+      color: #fff;
+      font-size: 10px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid #ffd166;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+
+    .avatar-info-col {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: left;
+    }
+
+    .player-name-input {
+      background: rgba(18, 5, 28, 0.85);
+      border: 1.5px solid rgba(255, 206, 105, 0.5);
+      border-radius: 999px;
+      padding: clamp(4px, 0.7cqw, 7px) clamp(12px, 1.6cqw, 16px);
+      font-size: clamp(12px, 1.4cqw, 14px);
+      color: #ffe8b3;
+      font-family: inherit;
+      font-weight: 700;
+      outline: none;
+      width: clamp(140px, 20cqw, 190px);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .player-name-input:focus {
+      border-color: #ffd700;
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+    }
+
+    .outfit-picker {
+      display: flex;
+      gap: 6px;
+    }
+
+    .outfit-btn {
+      background: rgba(27, 7, 43, 0.82);
+      color: #ffe9b5;
+      border: 1.5px solid rgba(255, 206, 105, 0.35);
+      padding: clamp(3px, 0.5cqw, 5px) clamp(8px, 1.2cqw, 12px);
+      border-radius: 999px;
+      font-size: clamp(10px, 1.2cqw, 12px);
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .outfit-btn.active {
+      background: linear-gradient(135deg, #ffd700 0%, #ff9800 100%);
+      color: #24051a;
+      border-color: #ffd700;
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+    }
+
+    .victory-recipient-badge {
+      font-size: clamp(13px, 1.8cqw, 18px);
+      color: #ffd700;
+      font-weight: 700;
+      margin-bottom: 4px;
+      text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+    }
+
+    .victory-actions-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .secondary-cta-btn {
+      background: rgba(45, 12, 70, 0.85);
+      color: #ffe8b3;
+      border: 1.5px solid rgba(255, 206, 105, 0.55);
+      padding: clamp(8px, 1.2cqw, 12px) clamp(16px, 2.4cqw, 24px);
+      border-radius: 999px;
+      font-size: clamp(12px, 1.5cqw, 15px);
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .secondary-cta-btn:hover {
+      background: rgba(75, 20, 110, 0.95);
+      border-color: #ffd700;
+      transform: translateY(-2px);
+    }
+    .wa-btn {
+      background: #128c7e !important;
+      color: #fff !important;
+      border-color: #25d366 !important;
+    }
+    .wa-btn:hover {
+      background: #075e54 !important;
+      box-shadow: 0 0 15px rgba(37, 211, 102, 0.6) !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-wrapper">
+    <canvas id="game-canvas" width="960" height="540"></canvas>
+
+    <!-- TOP HUD -->
+    <div id="hud">
+      <div class="hud-left">
+        <div class="hud-item">Score: <span id="score">0</span></div>
+      </div>
+
+      <div id="festival-progress" class="hud-progress">
+        <div class="progress-meta">
+          <span id="festival-progress-title">FESTIVAL CHALLENGE</span>
+          <strong id="festival-progress-label">0 / 100</strong>
+        </div>
+        <div class="progress-track">
+          <div id="festival-progress-bar"></div>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <div class="hud-item">Lives: <span id="lives" class="hearts"></span></div>
+        <button id="mute-btn" class="hud-btn" type="button" title="Mute / Unmute (M)">🔊</button>
+        <button id="pause-btn" class="hud-btn" type="button" title="Pause (P)">Pause</button>
+      </div>
+    </div>
+
+    <!-- Interactive Firework Lighting Banner -->
+    <div id="firework-banner" class="hidden">
+      🎇 Tap any firework or use the joystick to walk over and light all 8 fireworks! (Lit: <span id="lit-count">0 / 8</span>)
+    </div>
+
+    <!-- Bottom-Right Virtual Thumbstick for Android / Mobile -->
+    <div id="joystick-zone" class="hidden" aria-label="Movement Thumbstick">
+      <div id="joystick-knob"></div>
+    </div>
+
+    <!-- STAGE 0: CLEAN START OVERLAY (Strictly 2 Mode Options + Instructions + Start Button) -->
+    <div id="start-screen" class="overlay">
+      <div class="logo-badge">
+        <svg class="logo-diya-svg" viewBox="0 0 80 64" fill="none">
+          <path d="M40 4C40 4 27 19 27 28.5C27 35.8 32.8 41 40 41C47.2 41 53 35.8 53 28.5C53 19 40 4 40 4Z" fill="url(#flameOuter)"/>
+          <path d="M40 14C40 14 33 23 33 29C33 33.2 36.1 36.5 40 36.5C43.9 36.5 47 33.2 47 29C47 23 40 14 40 14Z" fill="#FFF7CC"/>
+          <path d="M12 42C17 55 27.5 60 40 60C52.5 60 63 55 68 42L60 39H20L12 42Z" fill="url(#bowlGrad)" stroke="#FFE58A" stroke-width="2"/>
+          <defs>
+            <linearGradient id="flameOuter" x1="40" y1="4" x2="40" y2="41" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#FFF2A6"/>
+              <stop offset="55%" stop-color="#FF9E2C"/>
+              <stop offset="100%" stop-color="#E03C1F"/>
+            </linearGradient>
+            <linearGradient id="bowlGrad" x1="12" y1="39" x2="68" y2="60" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#D95B26"/>
+              <stop offset="50%" stop-color="#9E2A1C"/>
+              <stop offset="100%" stop-color="#611215"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <h1>Diwali Dash</h1>
+      </div>
+
+      <p>Collect glowing diyas. Dodge firecrackers. Light up Diwali!</p>
+
+      <!-- AVATAR PROFILE: APOORVA ANIME HERO -->
+      <div class="avatar-setup-card" style="display:flex; align-items:center; justify-content:center; gap:16px;">
+        <div class="avatar-face-circle" id="avatar-preview-circle">
+          <img id="avatar-img-preview" src="avatar_face_anime.png" alt="Apoorva" class="avatar-img-preview" />
+        </div>
+        <div class="avatar-info-col" style="text-align:left;">
+          <div style="font-size:20px; font-weight:800; color:#ffd166; letter-spacing:0.5px;">Apoorva</div>
+        </div>
+      </div>
+
+      <div class="mode-picker" role="radiogroup" aria-label="Choose mode">
+        <button type="button" class="mode-btn active" data-mode="festival">Festival Challenge · 100 pts</button>
+        <button type="button" class="mode-btn" data-mode="endless">Endless Classic</button>
+      </div>
+
+      <ul class="instructions-list">
+        <li><strong>Move:</strong> Tap anywhere to walk or use joystick</li>
+        <li><strong>Goal:</strong> Collect 10 diyas (100 pts) to unlock & light the festive firecrackers!</li>
+      </ul>
+
+      <button id="start-btn" class="primary-cta-btn" type="button">Start Game</button>
+    </div>
+
+    <!-- STAGE 2 UNLOCK OVERLAY: PROMPT TO LIGHT THE FIRECRACKERS -->
+    <div id="pre-fireworks-screen" class="overlay victory-overlay hidden">
+      <div class="victory-eyebrow">CONGRATULATIONS!</div>
+      <div class="victory-emblem" aria-hidden="true">🪔 ✨ 🎇</div>
+      <h1>YOU HAVE COLLECTED 10 DIYAS!</h1>
+      <p class="victory-message">Now step into the courtyard and light the 8 festive firecrackers!</p>
+      <button id="light-crackers-btn" class="primary-cta-btn" type="button">🎇 Light the Firecrackers!</button>
+    </div>
+
+    <!-- STAGE 3 VICTORY OVERLAY: HAPPY DIWALI -->
+    <div id="victory-screen" class="overlay victory-overlay hidden">
+      <div class="victory-eyebrow">FESTIVAL CELEBRATION COMPLETE</div>
+      <div class="victory-emblem" aria-hidden="true">✦ ✨ ✦</div>
+      <h1 id="victory-heading">HAPPY DIWALI, APOORVA!</h1>
+      <div id="victory-recipient" class="victory-recipient-badge">Wishing joy & radiance to you and your Family!</div>
+      <p id="victory-message" class="victory-message">Every diya makes your Diwali brighter!</p>
+      <div class="victory-score">
+        <span>FINAL FESTIVAL SCORE</span>
+        <strong id="victory-score">100</strong>
+      </div>
+      <div class="victory-actions-row" style="justify-content:center;">
+        <button id="victory-btn" class="primary-cta-btn" type="button">Play Again</button>
+      </div>
+    </div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div id="gameover-screen" class="overlay hidden">
+      <h1>Game Over</h1>
+      <p>Score: <strong id="final-score">0</strong> · Best: <strong id="best-score">0</strong></p>
+      <button id="restart-btn" class="primary-cta-btn" type="button">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      // ------------ CONFIGURATION ------------
+      const CONFIG = {
+        width: 960,
+        height: 540,
+        playTop: 125, // Keep gameplay on the courtyard floor below the sky strip
+        playerSpeed: 285,
+        playerRadius: 22,
+        diyaRadius: 16,
+        diyaCount: 3,               // 3 simultaneous diyas
+        diyaPoints: 10,             // 10 points per diya -> 10 diyas required for 100 points
+        minDiyaDistFromPlayer: 220, // Balanced distance from player
+        minDiyaDistBetween: 200,    // Balanced distance between active diyas
+        crackerRadius: 17,
+        crackerStartCount: 2,       // Starts with only 2 active crackers
+        crackerMaxCount: 5,         // Capped at 5 crackers max towards the end
+        crackerBaseSpeed: 118,      // Gentle, fair obstacle speed
+        pointsPerNewCracker: 30,    // Spawns a new cracker only every 30 points
+        startingLives: 3,
+        invincibleTime: 1.6,
+        festivalTargetScore: 100,
+      };
+
+      const VICTORY_MESSAGES = [
+        "Every diya makes your Diwali brighter!",
+        "Your victory has lit up the night!",
+        "A hundred sparks. One brilliant celebration!",
+        "You brought the light. Happy Diwali!",
+        "Mission complete. Let the festivities begin!",
+      ];
+
+      const CRACKER_TYPES = [
+        { key: "crackerBox", size: 62, spinSpeed: 1.1, fuseDist: 24, fuseAngle: -Math.PI / 2 },
+        { key: "crackerRocket", size: 68, spinSpeed: 2.2, fuseDist: 26, fuseAngle: 2.07 },
+        { key: "crackerBundle", size: 60, spinSpeed: 1.7, fuseDist: 22, fuseAngle: -1.21 },
+      ];
+
+      const PLAYER_CELEBRATE_TIME = 0.35;
+      const PLAYER_HURT_TIME = 0.50;
+      const PLAYER_INTRO_TIME = 0.45;
+      const PLAYER_INTRO_JUMP_HEIGHT = 28;
+
+      // ------------ PROCEDURAL WEB AUDIO SYNTHESIZER ------------
+      class FestivalSoundEngine {
+        constructor() {
+          this.ctx = null;
+          this.muted = false;
+          this.noiseBuf = null;
+          this.compressor = null;
+        }
+
+        init() {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+              this.ctx = new AudioCtx();
+              try {
+                this.compressor = this.ctx.createDynamicsCompressor();
+                this.compressor.threshold.setValueAtTime(-18, this.ctx.currentTime);
+                this.compressor.knee.setValueAtTime(24, this.ctx.currentTime);
+                this.compressor.ratio.setValueAtTime(10, this.ctx.currentTime);
+                this.compressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
+                this.compressor.release.setValueAtTime(0.25, this.ctx.currentTime);
+                this.compressor.connect(this.ctx.destination);
+              } catch (e) {
+                this.compressor = null;
+              }
+
+              const sr = this.ctx.sampleRate;
+              this.noiseBuf = this.ctx.createBuffer(1, sr * 1.5, sr);
+              const data = this.noiseBuf.getChannelData(0);
+              for (let i = 0; i < data.length; i++) {
+                data[i] = Math.random() * 2 - 1;
+              }
+            }
+          }
+          if (this.ctx && this.ctx.state === "suspended") {
+            this.ctx.resume();
+          }
+        }
+
+        getOut() {
+          return this.compressor || (this.ctx ? this.ctx.destination : null);
+        }
+
+        toggleMute() {
+          this.muted = !this.muted;
+          return this.muted;
+        }
+
+        playDiyaChime(combo = 0) {
+          if (this.muted || !this.ctx) return;
+          const out = this.getOut();
+          if (!out) return;
+          const now = this.ctx.currentTime;
+          const scale = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+          const freq = scale[combo % scale.length];
+
+          const osc = this.ctx.createOscillator();
+          const osc2 = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = "sine";
+          osc2.type = "triangle";
+          osc.frequency.setValueAtTime(freq, now);
+          osc2.frequency.setValueAtTime(freq * 2, now);
+
+          gain.gain.setValueAtTime(0.11, now);
+          gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.45);
+
+          osc.connect(gain);
+          osc2.connect(gain);
+          gain.connect(out);
+
+          osc.start(now);
+          osc2.start(now);
+          osc.stop(now + 0.46);
+          osc2.stop(now + 0.46);
+        }
+
+        playCrackerBoom() {
+          if (this.muted || !this.ctx || !this.noiseBuf) return;
+          const out = this.getOut();
+          if (!out) return;
+          const now = this.ctx.currentTime;
+
+          const sub = this.ctx.createOscillator();
+          const subGain = this.ctx.createGain();
+          sub.type = "sine";
+          sub.frequency.setValueAtTime(115, now);
+          sub.frequency.exponentialRampToValueAtTime(26, now + 0.38);
+          subGain.gain.setValueAtTime(0.38, now);
+          subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          sub.connect(subGain);
+          subGain.connect(out);
+          sub.start(now);
+          sub.stop(now + 0.42);
+
+          const src = this.ctx.createBufferSource();
+          src.buffer = this.noiseBuf;
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = "lowpass";
+          filter.frequency.setValueAtTime(2800, now);
+          filter.frequency.exponentialRampToValueAtTime(220, now + 0.42);
+
+          const nGain = this.ctx.createGain();
+          nGain.gain.setValueAtTime(0.32, now);
+          nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.44);
+
+          src.connect(filter);
+          filter.connect(nGain);
+          nGain.connect(out);
+          src.start(now, 0, 0.45);
+        }
+
+        playFountainWhoosh() {
+          if (this.muted || !this.ctx || !this.noiseBuf) return;
+          const out = this.getOut();
+          if (!out) return;
+          const now = this.ctx.currentTime;
+          const src = this.ctx.createBufferSource();
+          src.buffer = this.noiseBuf;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = "bandpass";
+          filter.frequency.setValueAtTime(1200, now);
+          filter.linearRampToValueAtTime = filter.frequency.linearRampToValueAtTime || filter.frequency.setValueAtTime;
+          filter.frequency.linearRampToValueAtTime(2600, now + 0.65);
+          filter.Q.setValueAtTime(1.4, now);
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.01, now);
+          gain.gain.linearRampToValueAtTime(0.18, now + 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.35);
+
+          src.connect(filter);
+          filter.connect(gain);
+          gain.connect(out);
+          src.start(now, 0, 1.4);
+        }
+
+        playChakriSpin() {
+          if (this.muted || !this.ctx) return;
+          const out = this.getOut();
+          if (!out) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(260, now);
+          osc.frequency.exponentialRampToValueAtTime(760, now + 0.95);
+          gain.gain.setValueAtTime(0.09, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+          osc.connect(gain);
+          gain.connect(out);
+          osc.start(now);
+          osc.stop(now + 1.02);
+        }
+
+        playRocketLaunch() {
+          if (this.muted || !this.ctx) return;
+          const out = this.getOut();
+          if (!out) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(380, now);
+          osc.frequency.exponentialRampToValueAtTime(1480, now + 0.52);
+          gain.gain.setValueAtTime(0.09, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+          osc.connect(gain);
+          gain.connect(out);
+          osc.start(now);
+          osc.stop(now + 0.56);
+        }
+
+        playSkyFireworkPop() {
+          if (this.muted || !this.ctx || !this.noiseBuf) return;
+          const out = this.getOut();
+          if (!out) return;
+          const now = this.ctx.currentTime;
+          const src = this.ctx.createBufferSource();
+          src.buffer = this.noiseBuf;
+
+          const bp = this.ctx.createBiquadFilter();
+          bp.type = "bandpass";
+          bp.frequency.setValueAtTime(1400 + Math.random() * 1200, now);
+          bp.Q.setValueAtTime(2.5, now);
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+          src.connect(bp);
+          bp.connect(gain);
+          gain.connect(out);
+          src.start(now, Math.random() * 0.5, 0.24);
+        }
+
+        playVictoryFanfare() {
+          if (this.muted || !this.ctx) return;
+          const notes = [523.25, 659.25, 783.99, 1046.5];
+          notes.forEach((n, idx) => {
+            setTimeout(() => {
+              this.playDiyaChime(idx + 2);
+            }, idx * 110);
+          });
+        }
+      }
+
+      const sound = new FestivalSoundEngine();
+
+      // ------------ DOM & CANVAS SETUP ------------
+      const canvas = document.getElementById("game-canvas");
+      const ctx = canvas.getContext("2d");
+
+      function setupHiDPI() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = CONFIG.width * dpr;
+        canvas.height = CONFIG.height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+      }
+      setupHiDPI();
+      window.addEventListener("resize", setupHiDPI);
+
+      const scoreEl = document.getElementById("score");
+      const livesEl = document.getElementById("lives");
+      const muteBtn = document.getElementById("mute-btn");
+      const pauseBtn = document.getElementById("pause-btn");
+      const startScreen = document.getElementById("start-screen");
+      const preFireworksScreen = document.getElementById("pre-fireworks-screen");
+      const victoryScreen = document.getElementById("victory-screen");
+      const gameoverScreen = document.getElementById("gameover-screen");
+      const finalScoreEl = document.getElementById("final-score");
+      const bestScoreEl = document.getElementById("best-score");
+      const festivalProgressEl = document.getElementById("festival-progress");
+      const festivalProgressTitleEl = document.getElementById("festival-progress-title");
+      const festivalProgressLabelEl = document.getElementById("festival-progress-label");
+      const festivalProgressBarEl = document.getElementById("festival-progress-bar");
+      const fireworkBannerEl = document.getElementById("firework-banner");
+      const litCountEl = document.getElementById("lit-count");
+      const victoryMessageEl = document.getElementById("victory-message");
+      const victoryScoreEl = document.getElementById("victory-score");
+      const joystickZoneEl = document.getElementById("joystick-zone");
+      const joystickKnobEl = document.getElementById("joystick-knob");
+
+      // ------------ GAME STATE & CUSTOM AVATAR ------------
+      let selectedMode = "festival";
+      let lastVictoryMessage = "";
+
+      function safeGetBest() {
+        try {
+          return Number(localStorage.getItem("diwaliDashBest") || 0);
+        } catch (e) {
+          return 0;
+        }
+      }
+
+      function safeSetBest(val) {
+        try {
+          localStorage.setItem("diwaliDashBest", String(val));
+        } catch (e) {}
+      }
+
+      const state = {
+        mode: "start", // "start" | "playing" | "paused" | "pre_fireworks" | "lighting_fireworks" | "victory" | "gameover"
+        gameMode: selectedMode,
+        playerName: "Apoorva",
+        outfit: "lehenga", // "lehenga" | "kurta"
+        characterMode: "anime", // "anime" (full-body anime hero) | "composite" (custom circular photo face)
+        fullAnimeImg: null,
+        customFaceImg: null,
+        score: 0,
+        best: safeGetBest(),
+        lives: CONFIG.startingLives,
+        time: 0,
+        shake: 0,
+        flash: 0,
+        victoryBurstTimer: 0,
+        allLitCountdown: 0,
+        skyRocketTimer: 0.4,
+        player: null,
+        diyas: [],
+        crackers: [],
+        stageFireworks: [],
+        particles: [],
+        smokePuffs: [],
+        popups: [],
+        rings: [],
+        ambientLights: [],
+        skyParticles: [],
+      };
+
+      // Check URL parameters for custom shared links (e.g., ?name=Rahul&outfit=kurta)
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramName = urlParams.get("name") || urlParams.get("to");
+        if (paramName) {
+          state.playerName = paramName.trim();
+          const nameInputEl = document.getElementById("player-name-input");
+          if (nameInputEl) nameInputEl.value = state.playerName;
+        }
+        const paramOutfit = urlParams.get("outfit");
+        if (paramOutfit && ["lehenga", "kurta"].includes(paramOutfit)) {
+          state.outfit = paramOutfit;
+        }
+      } catch (e) {}
+
+      // Wire up Photo Upload & Avatar Customizer
+      const avatarFileInput = document.getElementById("avatar-file-input");
+      const avatarImgPreview = document.getElementById("avatar-img-preview");
+      const avatarPlaceholderEmoji = document.getElementById("avatar-placeholder-emoji");
+      const playerNameInput = document.getElementById("player-name-input");
+
+      // Load Full-Body Anime Character Sprite
+      const fullAnimeImg = new Image();
+      fullAnimeImg.onload = () => {
+        state.fullAnimeImg = fullAnimeImg;
+      };
+      fullAnimeImg.src = "anime_character_fullbody.png";
+
+      // Initialize default face image with user's uploaded portrait
+      function setFaceImage(src) {
+        const img = new Image();
+        img.onload = () => {
+          state.customFaceImg = img;
+          if (avatarImgPreview) {
+            avatarImgPreview.src = src;
+            avatarImgPreview.style.display = "block";
+          }
+          if (avatarPlaceholderEmoji) avatarPlaceholderEmoji.style.display = "none";
+        };
+        img.src = src;
+      }
+
+      setFaceImage("avatar_face_anime.png");
+
+      const btnPhotoAnime = document.getElementById("btn-photo-anime");
+      const btnPhotoFront = document.getElementById("btn-photo-front");
+      const btnPhotoSide = document.getElementById("btn-photo-side");
+      const switchBtns = [btnPhotoAnime, btnPhotoFront, btnPhotoSide].filter(Boolean);
+
+      function highlightSwitchBtn(activeBtn) {
+        switchBtns.forEach((btn) => {
+          if (btn === activeBtn) {
+            btn.style.background = "rgba(255,215,0,0.25)";
+            btn.style.color = "#ffd700";
+            btn.style.borderColor = "#ffd700";
+          } else {
+            btn.style.background = "rgba(255,255,255,0.08)";
+            btn.style.color = "#ddd";
+            btn.style.borderColor = "rgba(255,215,0,0.3)";
+          }
+        });
+      }
+
+      if (btnPhotoAnime) {
+        btnPhotoAnime.addEventListener("click", () => {
+          highlightSwitchBtn(btnPhotoAnime);
+          state.characterMode = "anime";
+          setFaceImage("avatar_face_anime.png");
+        });
+      }
+      if (btnPhotoFront) {
+        btnPhotoFront.addEventListener("click", () => {
+          highlightSwitchBtn(btnPhotoFront);
+          state.characterMode = "composite";
+          setFaceImage("avatar_face.png");
+        });
+      }
+      if (btnPhotoSide) {
+        btnPhotoSide.addEventListener("click", () => {
+          highlightSwitchBtn(btnPhotoSide);
+          state.characterMode = "composite";
+          setFaceImage("avatar_face_profile.png");
+        });
+      }
+
+      if (avatarFileInput) {
+        avatarFileInput.addEventListener("change", (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            state.characterMode = "composite";
+            setFaceImage(ev.target.result);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      if (playerNameInput) {
+        playerNameInput.addEventListener("input", () => {
+          const val = playerNameInput.value.trim();
+          state.playerName = val || "Apoorva";
+        });
+      }
+
+      document.querySelectorAll(".outfit-btn").forEach((btn) => {
+        if (btn.dataset.outfit === state.outfit) btn.classList.add("active");
+        else btn.classList.remove("active");
+
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".outfit-btn").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          state.outfit = btn.dataset.outfit || "lehenga";
+        });
+      });
+
+      // ------------ INPUT HANDLING (Keyboard + Bottom Virtual Thumbstick + Stage 2 Tap-to-Walk) ------------
+      const keys = new Set();
+      const pointer = { active: false, x: CONFIG.width / 2, y: CONFIG.height / 2, hover: false, targetX: null, targetY: null, targetFirework: null };
+      const joystick = { active: false, pointerId: null, dx: 0, dy: 0 };
+
+      window.addEventListener("keydown", (e) => {
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+          e.preventDefault();
+        }
+        const key = e.key.toLowerCase();
+        keys.add(key);
+        if (key === "p") togglePause();
+        if (key === "m") {
+          const isMuted = sound.toggleMute();
+          muteBtn.textContent = isMuted ? "🔇" : "🔊";
+        }
+        if (e.key === "Enter") {
+          if (state.mode === "start" || state.mode === "gameover" || state.mode === "victory") {
+            startGame();
+          } else if (state.mode === "pre_fireworks") {
+            startFireworkLightingStage();
+          }
+        }
+      });
+
+      window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
+
+      function updateJoystickFromEvent(e) {
+        const rect = joystickZoneEl.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const maxR = rect.width * 0.36;
+        const vx = e.clientX - cx;
+        const vy = e.clientY - cy;
+        const dist = Math.hypot(vx, vy);
+        const clamped = Math.min(dist, maxR);
+        const angle = Math.atan2(vy, vx);
+        const kx = Math.cos(angle) * clamped;
+        const ky = Math.sin(angle) * clamped;
+        joystickKnobEl.style.transform = `translate(${kx}px, ${ky}px)`;
+        joystick.dx = maxR > 0 ? kx / maxR : 0;
+        joystick.dy = maxR > 0 ? ky / maxR : 0;
+      }
+
+      function resetJoystick() {
+        joystick.active = false;
+        joystick.pointerId = null;
+        joystick.dx = 0;
+        joystick.dy = 0;
+        joystickKnobEl.style.transform = "translate(0px, 0px)";
+      }
+
+      joystickZoneEl.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
+        sound.init();
+        joystick.active = true;
+        joystick.pointerId = e.pointerId;
+        joystickZoneEl.setPointerCapture(e.pointerId);
+        updateJoystickFromEvent(e);
+      });
+
+      joystickZoneEl.addEventListener("pointermove", (e) => {
+        if (!joystick.active || e.pointerId !== joystick.pointerId) return;
+        updateJoystickFromEvent(e);
+      });
+
+      ["pointerup", "pointercancel"].forEach((type) => {
+        joystickZoneEl.addEventListener(type, (e) => {
+          if (e.pointerId === joystick.pointerId) resetJoystick();
+        });
+      });
+
+      function setPointerFromEvent(e) {
+        const rect = canvas.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * CONFIG.width;
+        pointer.y = ((e.clientY - rect.top) / rect.height) * CONFIG.height;
+        pointer.hover = true;
+
+        if (state.mode === "lighting_fireworks" && pointer.active) {
+          // Check if tapped directly on or near any stage firework
+          let clickedFw = null;
+          for (const fw of state.stageFireworks) {
+            if (!fw.lit && Math.hypot(pointer.x - fw.x, pointer.y - fw.y) < 46) {
+              clickedFw = fw;
+              break;
+            }
+          }
+          if (clickedFw) {
+            // Set walk target beside the firework so character ignites it smoothly
+            pointer.targetX = clickedFw.x + (clickedFw.x < CONFIG.width / 2 ? -28 : 28);
+            pointer.targetY = clickedFw.y;
+            pointer.targetFirework = clickedFw;
+            addPopup(clickedFw.x, clickedFw.y - 32, "Lighting...", "#ffd166");
+          } else {
+            pointer.targetX = Math.max(CONFIG.playerRadius, Math.min(CONFIG.width - CONFIG.playerRadius, pointer.x));
+            pointer.targetY = Math.max(CONFIG.playTop + CONFIG.playerRadius, Math.min(CONFIG.height - CONFIG.playerRadius, pointer.y));
+            pointer.targetFirework = null;
+          }
+        }
+      }
+
+      canvas.addEventListener("pointerdown", (e) => {
+        sound.init();
+        pointer.active = true;
+        setPointerFromEvent(e);
+      });
+      canvas.addEventListener("pointermove", (e) => {
+        setPointerFromEvent(e);
+      });
+      window.addEventListener("pointerup", () => {
+        pointer.active = false;
+      });
+
+      // ------------ ENTITY FACTORIES & SPAWNERS ------------
+      const rand = (min, max) => min + Math.random() * (max - min);
+
+      function resetPlayer() {
+        state.player = {
+          x: CONFIG.width / 2,
+          y: (CONFIG.height + CONFIG.playTop) / 2 + 20,
+          vx: 0,
+          vy: 0,
+          facing: 1,
+          invincible: 0,
+          animTime: 0,
+          celebrateTime: 0,
+          hurtTime: 0,
+          introTime: PLAYER_INTRO_TIME,
+        };
+      }
+
+      function spawnDiya() {
+        const margin = 56;
+        let bestCandidate = {
+          x: CONFIG.width / 2,
+          y: (CONFIG.playTop + CONFIG.height) / 2,
+          minScore: -1,
+        };
+
+        for (let tries = 0; tries < 65; tries++) {
+          const x = rand(margin, CONFIG.width - margin);
+          const y = rand(CONFIG.playTop + 44, CONFIG.height - margin);
+          const dPlayer = state.player ? Math.hypot(x - state.player.x, y - state.player.y) : 999;
+
+          let minOther = Infinity;
+          for (const d of state.diyas) {
+            minOther = Math.min(minOther, Math.hypot(x - d.x, y - d.y));
+          }
+
+          const combined = Math.min(dPlayer, minOther);
+          if (combined > bestCandidate.minScore) {
+            bestCandidate = { x, y, minScore: combined };
+          }
+
+          if (dPlayer >= CONFIG.minDiyaDistFromPlayer && minOther >= CONFIG.minDiyaDistBetween) {
+            state.diyas.push({
+              x,
+              y,
+              phase: rand(0, Math.PI * 2),
+              spawn: 0,
+            });
+            return;
+          }
+        }
+
+        state.diyas.push({
+          x: bestCandidate.x,
+          y: bestCandidate.y,
+          phase: rand(0, Math.PI * 2),
+          spawn: 0,
+        });
+      }
+
+      function spawnCracker() {
+        const edge = Math.floor(rand(0, 4));
+        let x, y;
+        if (edge === 0) { x = rand(40, CONFIG.width - 40); y = CONFIG.playTop + 24; }
+        else if (edge === 1) { x = CONFIG.width - 24; y = rand(CONFIG.playTop + 30, CONFIG.height - 30); }
+        else if (edge === 2) { x = rand(40, CONFIG.width - 40); y = CONFIG.height - 24; }
+        else { x = 24; y = rand(CONFIG.playTop + 30, CONFIG.height - 30); }
+
+        if (state.player && Math.hypot(x - state.player.x, y - state.player.y) < 235) {
+          x = (x + CONFIG.width / 2) % CONFIG.width;
+        }
+
+        const speed = CONFIG.crackerBaseSpeed * (1 + Math.min(state.score / 220, 0.35)) * rand(0.9, 1.12);
+        const targetX = rand(CONFIG.width * 0.2, CONFIG.width * 0.8);
+        const targetY = rand(CONFIG.playTop + 65, CONFIG.height - 65);
+        const angle = Math.atan2(targetY - y, targetX - x) + rand(-0.3, 0.3);
+        const type = CRACKER_TYPES[Math.floor(rand(0, CRACKER_TYPES.length))];
+        const spinDir = Math.random() < 0.5 ? -1 : 1;
+
+        state.crackers.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          rot: rand(0, Math.PI * 2),
+          spin: type.spinSpeed * spinDir,
+          type,
+        });
+      }
+
+      // 8 Interactive Courtyard Fireworks: 3 Anaars, 2 Ground Chakris, 2 Sky Rockets, 1 1000-Wala Ladi
+      function setupInteractiveFireworks() {
+        state.stageFireworks = [
+          { id: 0, kind: "anaar", label: "Golden Anaar", x: 145, y: 415, lit: false, timer: 0, duration: 4.5, rot: 0, vx: 0, vy: 0 },
+          { id: 1, kind: "chakri", label: "Emerald Chakri", x: 265, y: 465, lit: false, timer: 0, duration: 4.2, rot: 0, vx: 0, vy: 0 },
+          { id: 2, kind: "rocket", label: "Sky Rocket", x: 355, y: 385, lit: false, timer: 0, duration: 1.2, rot: 0, vx: 0, vy: 0, launched: false, rocketY: 385 },
+          { id: 3, kind: "anaar", label: "Silver Anaar", x: 480, y: 350, lit: false, timer: 0, duration: 4.5, rot: 0, vx: 0, vy: 0 },
+          { id: 4, kind: "ladi", label: "1000-Wala Ladi", x: 480, y: 465, lit: false, timer: 0, duration: 3.5, rot: 0, vx: 0, vy: 0, popTimer: 0 },
+          { id: 5, kind: "rocket", label: "Sky Rocket", x: 605, y: 385, lit: false, timer: 0, duration: 1.2, rot: 0, vx: 0, vy: 0, launched: false, rocketY: 385 },
+          { id: 6, kind: "chakri", label: "Royal Chakri", x: 695, y: 465, lit: false, timer: 0, duration: 4.2, rot: 0, vx: 0, vy: 0 },
+          { id: 7, kind: "anaar", label: "Ruby Anaar", x: 815, y: 415, lit: false, timer: 0, duration: 4.5, rot: 0, vx: 0, vy: 0 },
+        ];
+        updateLitBanner();
+        updateFestivalProgressUI();
+      }
+
+      function updateLitBanner() {
+        const litTotal = state.stageFireworks.filter((f) => f.lit).length;
+        litCountEl.textContent = `${litTotal} / ${state.stageFireworks.length}`;
+      }
+
+      function addBurst(x, y, colors, count = 26, speedMax = 220, floorY = null) {
+        for (let i = 0; i < count; i++) {
+          const a = rand(0, Math.PI * 2);
+          const s = rand(40, speedMax);
+          state.particles.push({
+            x,
+            y,
+            vx: Math.cos(a) * s,
+            vy: Math.sin(a) * s,
+            life: rand(0.35, 0.85),
+            age: 0,
+            size: rand(2.5, 6),
+            color: colors[i % colors.length],
+            floorY,
+          });
+        }
+      }
+
+      function addSmokePuff(x, y, count = 4) {
+        for (let i = 0; i < count; i++) {
+          state.smokePuffs.push({
+            x: x + rand(-14, 14),
+            y: y + rand(-8, 8),
+            vx: rand(-18, 18),
+            vy: rand(-38, -16),
+            r: rand(10, 18),
+            age: 0,
+            life: rand(0.9, 1.6),
+          });
+        }
+      }
+
+      function addLightRing(x, y, color = "rgba(255, 220, 120, 1)", maxRadius = 110) {
+        state.rings.push({ x, y, radius: 10, maxRadius, age: 0, life: 0.45, color });
+      }
+
+      function initAmbientLights() {
+        state.ambientLights = [];
+        for (let i = 0; i < 32; i++) {
+          state.ambientLights.push({
+            x: rand(0, CONFIG.width),
+            y: rand(CONFIG.playTop, CONFIG.height),
+            vy: rand(-18, -6),
+            vx: rand(-8, 8),
+            size: rand(1.5, 3.8),
+            phase: rand(0, Math.PI * 2),
+            hue: Math.random() < 0.7 ? "#ffd36e" : "#ff8552",
+          });
+        }
+      }
+
+      function spawnSkyFirework(customX, customY) {
+        const palettes = [
+          ["#ffd966", "#ff9233", "#fff4b8"],
+          ["#ff5e9c", "#ffc857", "#ffffff"],
+          ["#63f5ff", "#a78bfa", "#ffe66d"],
+          ["#ff6b6b", "#ffd166", "#06d6a0"],
+        ];
+        const colors = palettes[Math.floor(rand(0, palettes.length))];
+        const x = customX ?? rand(90, CONFIG.width - 90);
+        const y = customY ?? rand(32, CONFIG.playTop - 22);
+        const count = 36;
+
+        for (let i = 0; i < count; i++) {
+          const a = (i / count) * Math.PI * 2 + rand(-0.05, 0.05);
+          const s = rand(45, 138);
+          state.skyParticles.push({
+            x,
+            y,
+            vx: Math.cos(a) * s,
+            vy: Math.sin(a) * s,
+            age: 0,
+            life: rand(0.7, 1.35),
+            size: rand(2, 4.2),
+            color: colors[i % colors.length],
+          });
+        }
+        if (state.mode === "playing" || state.mode === "lighting_fireworks" || state.mode === "victory") {
+          sound.playSkyFireworkPop();
+        }
+      }
+
+      function addPopup(x, y, text, color = "#ffe066") {
+        state.popups.push({ x, y, text, color, age: 0, life: 0.85 });
+      }
+
+      // ------------ HUD & SCREEN CONTROLLERS ------------
+      function isFestivalMode() {
+        return state.gameMode === "festival";
+      }
+
+      function updateModeButtons() {
+        document.querySelectorAll(".mode-btn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.mode === selectedMode);
+        });
+      }
+
+      function updateFestivalProgressUI() {
+        const showFestivalHud = isFestivalMode();
+        festivalProgressEl.classList.toggle("hidden", !showFestivalHud);
+        if (!showFestivalHud) return;
+
+        if (state.mode === "lighting_fireworks" && state.stageFireworks.length > 0) {
+          const litCount = state.stageFireworks.filter((f) => f.lit).length;
+          const total = state.stageFireworks.length;
+          festivalProgressTitleEl.textContent = "LIGHT THE FIRECRACKERS";
+          festivalProgressLabelEl.textContent = `${litCount} / ${total} Lit`;
+          festivalProgressBarEl.style.width = `${(litCount / total) * 100}%`;
+          return;
+        }
+
+        festivalProgressTitleEl.textContent = "FESTIVAL CHALLENGE";
+        const clampedScore = Math.min(state.score, CONFIG.festivalTargetScore);
+        const progress = (clampedScore / CONFIG.festivalTargetScore) * 100;
+        festivalProgressLabelEl.textContent = `${clampedScore} / ${CONFIG.festivalTargetScore}`;
+        festivalProgressBarEl.style.width = `${progress}%`;
+      }
+
+      function pickVictoryMessage() {
+        const pool = VICTORY_MESSAGES.filter((msg) => msg !== lastVictoryMessage);
+        const nextList = pool.length ? pool : VICTORY_MESSAGES;
+        lastVictoryMessage = nextList[Math.floor(Math.random() * nextList.length)];
+        return lastVictoryMessage;
+      }
+
+      function updateHUD() {
+        scoreEl.textContent = state.score;
+        updateFestivalProgressUI();
+        livesEl.innerHTML = "";
+        for (let i = 0; i < CONFIG.startingLives; i++) {
+          const lostClass = i >= state.lives ? "lost" : "";
+          livesEl.insertAdjacentHTML(
+            "beforeend",
+            `<svg class="heart-svg ${lostClass}" viewBox="0 0 24 24" fill="none">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff4d6d" stroke="#ffe58a" stroke-width="1.5"/>
+            </svg>`
+          );
+        }
+      }
+
+      function startGame() {
+        sound.init();
+        state.mode = "playing";
+        state.gameMode = selectedMode;
+        state.score = 0;
+        state.lives = CONFIG.startingLives;
+        state.time = 0;
+        state.shake = 0;
+        state.flash = 0;
+        state.victoryBurstTimer = 0;
+        state.allLitCountdown = 0;
+        state.diyas = [];
+        state.crackers = [];
+        state.stageFireworks = [];
+        state.particles = [];
+        state.smokePuffs = [];
+        state.popups = [];
+        state.rings = [];
+        state.skyParticles = [];
+        state.skyRocketTimer = 0.2;
+
+        resetPlayer();
+        resetJoystick();
+        initAmbientLights();
+
+        for (let i = 0; i < CONFIG.diyaCount; i++) spawnDiya();
+        for (let i = 0; i < CONFIG.crackerStartCount; i++) spawnCracker();
+
+        updateHUD();
+        startScreen.classList.add("hidden");
+        preFireworksScreen.classList.add("hidden");
+        victoryScreen.classList.add("hidden");
+        gameoverScreen.classList.add("hidden");
+        fireworkBannerEl.classList.add("hidden");
+        joystickZoneEl.classList.remove("hidden");
+        pauseBtn.textContent = "Pause";
+      }
+
+      // STAGE 1 -> STAGE 2A: Reached 100 Points -> Unlock "Light the Firecrackers!" Prompt
+      function unlockFireworksPrompt() {
+        state.mode = "pre_fireworks";
+        state.best = Math.max(state.best, state.score);
+        localStorage.setItem("diwaliDashBest", String(state.best));
+        sound.playVictoryFanfare();
+
+        pointer.active = false;
+        resetJoystick();
+        joystickZoneEl.classList.add("hidden");
+        state.crackers = [];
+        state.diyas = [];
+        state.flash = 0.65;
+        state.shake = 0;
+
+        if (state.player) {
+          state.player.vx = 0;
+          state.player.vy = 0;
+          state.player.hurtTime = 0;
+          state.player.invincible = 0;
+          state.player.celebrateTime = 999;
+          addLightRing(state.player.x, state.player.y, "rgba(255, 232, 150, 1)", 220);
+          addBurst(state.player.x, state.player.y, ["#fff6cc", "#ffd24c", "#ff8c2b", "#ff5e9c"], 48, 260);
+        }
+
+        updateHUD();
+        preFireworksScreen.classList.remove("hidden");
+      }
+
+      // STAGE 2B: Interactive Firecracker Lighting Sandbox
+      function startFireworkLightingStage() {
+        sound.init();
+        preFireworksScreen.classList.add("hidden");
+        fireworkBannerEl.classList.remove("hidden");
+        joystickZoneEl.classList.remove("hidden");
+        resetJoystick();
+        pointer.targetX = null;
+        pointer.targetY = null;
+        state.mode = "lighting_fireworks";
+        state.allLitCountdown = 0;
+        setupInteractiveFireworks();
+
+        if (state.player) {
+          state.player.x = CONFIG.width * 0.5;
+          state.player.y = CONFIG.playTop + 135;
+          state.player.vx = 0;
+          state.player.vy = 0;
+          state.player.celebrateTime = 0.5;
+        }
+      }
+
+      // STAGE 3: All 8 Fireworks Lit -> Show HAPPY DIWALI! Finale Overlay
+      function showHappyDiwaliFinale() {
+        state.mode = "victory";
+        fireworkBannerEl.classList.add("hidden");
+        joystickZoneEl.classList.add("hidden");
+        resetJoystick();
+        sound.playVictoryFanfare();
+
+        pointer.active = false;
+        state.flash = 0.7;
+        state.victoryBurstTimer = 0.08;
+        if (state.player) {
+          state.player.vx = 0;
+          state.player.vy = 0;
+          state.player.celebrateTime = 999;
+        }
+
+        spawnSkyFirework(CONFIG.width * 0.24, 66);
+        spawnSkyFirework(CONFIG.width * 0.5, 48);
+        spawnSkyFirework(CONFIG.width * 0.76, 68);
+
+        const headingEl = document.getElementById("victory-heading");
+        const recipientEl = document.getElementById("victory-recipient");
+        if (headingEl) {
+          headingEl.textContent = `HAPPY DIWALI, ${state.playerName.toUpperCase()}!`;
+        }
+        if (recipientEl) {
+          recipientEl.textContent = "Wishing joy & radiance to you and your Family!";
+        }
+
+        victoryMessageEl.textContent = pickVictoryMessage();
+        victoryScoreEl.textContent = state.score;
+        state.best = Math.max(state.best, state.score);
+        safeSetBest(state.best);
+        victoryScreen.classList.remove("hidden");
+      }
+
+      function endGame() {
+        state.mode = "gameover";
+        pointer.active = false;
+        resetJoystick();
+        fireworkBannerEl.classList.add("hidden");
+        joystickZoneEl.classList.add("hidden");
+        state.best = Math.max(state.best, state.score);
+        safeSetBest(state.best);
+        finalScoreEl.textContent = state.score;
+        bestScoreEl.textContent = state.best;
+        gameoverScreen.classList.remove("hidden");
+      }
+
+      function togglePause() {
+        if (state.mode === "playing") {
+          state.mode = "paused";
+          pauseBtn.textContent = "Resume";
+        } else if (state.mode === "paused") {
+          state.mode = "playing";
+          pauseBtn.textContent = "Pause";
+        }
+      }
+
+      document.getElementById("start-btn").addEventListener("click", startGame);
+      document.getElementById("light-crackers-btn").addEventListener("click", startFireworkLightingStage);
+      document.getElementById("victory-btn").addEventListener("click", startGame);
+      document.getElementById("restart-btn").addEventListener("click", startGame);
+
+      const waBtn = document.getElementById("victory-wa-btn");
+      if (waBtn) {
+        waBtn.addEventListener("click", () => {
+          const shareUrl = `${window.location.origin}${window.location.pathname}?name=${encodeURIComponent(state.playerName)}&outfit=${encodeURIComponent(state.outfit)}`;
+          const msg = encodeURIComponent(`🪔 Happy Diwali ${state.playerName}! I played the Diwali Dash game and lit all 8 festive firecrackers in the courtyard! Play your personalized celebration here: ${shareUrl}`);
+          window.open(`https://api.whatsapp.com/send?text=${msg}`, "_blank");
+        });
+      }
+      const copyBtn = document.getElementById("victory-copy-btn");
+      if (copyBtn) {
+        copyBtn.addEventListener("click", () => {
+          const shareUrl = `${window.location.origin}${window.location.pathname}?name=${encodeURIComponent(state.playerName)}&outfit=${encodeURIComponent(state.outfit)}`;
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(shareUrl).then(() => {
+              addPopup(CONFIG.width / 2, CONFIG.height / 2, "Link Copied!", "#ffd700");
+              alert("Festive Diwali celebration link copied to clipboard!");
+            });
+          }
+        });
+      }
+
+      pauseBtn.addEventListener("click", togglePause);
+      muteBtn.addEventListener("click", () => {
+        sound.init();
+        const isMuted = sound.toggleMute();
+        muteBtn.textContent = isMuted ? "🔇" : "🔊";
+      });
+
+      document.querySelectorAll(".mode-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          selectedMode = btn.dataset.mode || "festival";
+          state.gameMode = selectedMode;
+          updateModeButtons();
+          updateFestivalProgressUI();
+        });
+      });
+
+      updateModeButtons();
+      updateFestivalProgressUI();
+
+      // ------------ UPDATE LOOP ------------
+      function updateAmbientEffects(dt) {
+        for (const l of state.ambientLights) {
+          l.x += l.vx * dt;
+          l.y += l.vy * dt;
+          if (l.y < CONFIG.playTop) {
+            l.y = CONFIG.height + 5;
+            l.x = rand(0, CONFIG.width);
+          }
+          if (l.x < 0) l.x = CONFIG.width;
+          if (l.x > CONFIG.width) l.x = 0;
+        }
+
+        state.skyRocketTimer -= dt;
+        if (state.skyRocketTimer <= 0) {
+          spawnSkyFirework();
+          state.skyRocketTimer = rand(0.9, 1.9);
+        }
+
+        for (let i = state.skyParticles.length - 1; i >= 0; i--) {
+          const sp = state.skyParticles[i];
+          sp.age += dt;
+          sp.x += sp.vx * dt;
+          sp.y += sp.vy * dt;
+          sp.vy += 55 * dt;
+          sp.vx *= 0.99;
+          if (sp.age >= sp.life) state.skyParticles.splice(i, 1);
+        }
+      }
+
+      function updateTransientEffects(dt) {
+        for (let i = state.particles.length - 1; i >= 0; i--) {
+          const pt = state.particles[i];
+          pt.age += dt;
+          pt.x += pt.vx * dt;
+          pt.y += pt.vy * dt;
+          pt.vy += 240 * dt;
+          if (pt.floorY && pt.y >= pt.floorY && pt.vy > 0) {
+            pt.y = pt.floorY;
+            pt.vy *= -0.45;
+            pt.vx *= 0.78;
+          }
+          if (pt.age >= pt.life) state.particles.splice(i, 1);
+        }
+
+        for (let i = state.smokePuffs.length - 1; i >= 0; i--) {
+          const sm = state.smokePuffs[i];
+          sm.age += dt;
+          sm.x += sm.vx * dt;
+          sm.y += sm.vy * dt;
+          sm.r += 14 * dt;
+          if (sm.age >= sm.life) state.smokePuffs.splice(i, 1);
+        }
+
+        for (let i = state.popups.length - 1; i >= 0; i--) {
+          const pp = state.popups[i];
+          pp.age += dt;
+          pp.y -= 35 * dt;
+          if (pp.age >= pp.life) state.popups.splice(i, 1);
+        }
+
+        for (let i = state.rings.length - 1; i >= 0; i--) {
+          const rg = state.rings[i];
+          rg.age += dt;
+          rg.radius += (rg.maxRadius - rg.radius) * Math.min(1, dt * 8);
+          if (rg.age >= rg.life) state.rings.splice(i, 1);
+        }
+      }
+
+      function igniteStageFirework(fw) {
+        if (fw.lit) return;
+        fw.lit = true;
+        fw.timer = 0;
+        fw.targetAltitude = rand(50, 85);
+        state.score += 25;
+        scoreEl.textContent = state.score;
+        updateLitBanner();
+        updateFestivalProgressUI();
+
+        if (state.player) {
+          state.player.celebrateTime = 0.85;
+        }
+
+        addLightRing(fw.x, fw.y, "rgba(255, 225, 130, 1)", 135);
+        addPopup(fw.x, fw.y - 28, `${fw.label}! +25`, "#ffe58a");
+        addSmokePuff(fw.x, fw.y, 4);
+
+        if (fw.kind === "anaar") {
+          sound.playFountainWhoosh();
+        } else if (fw.kind === "chakri") {
+          sound.playChakriSpin();
+          fw.vx = rand(-115, 115);
+          fw.vy = rand(-65, 65);
+        } else if (fw.kind === "rocket") {
+          sound.playRocketLaunch();
+        } else if (fw.kind === "ladi") {
+          sound.playCrackerBoom();
+          state.shake = 10;
+        }
+
+        const allLit = state.stageFireworks.every((item) => item.lit);
+        if (allLit && state.allLitCountdown <= 0) {
+          state.allLitCountdown = 4.8; // Allow full festival firework display before victory banner
+          fireworkBannerEl.innerHTML = "✨ ALL 8 FIREWORKS IGNITED! ENJOY THE GRAND FESTIVE SHOW! ✨";
+          fireworkBannerEl.style.borderColor = "#ffd700";
+          fireworkBannerEl.style.boxShadow = "0 0 25px rgba(255, 215, 0, 0.7)";
+        }
+      }
+
+      function updateFireworkLightingStage(dt) {
+        state.time += dt;
+        state.shake = Math.max(0, state.shake - dt * 25);
+        state.flash = Math.max(0, state.flash - dt * 1.8);
+
+        // Player Movement in Sandbox: Character walks smoothly via touch, tap, joystick, or keys
+        const p = state.player;
+        if (p) {
+          let dx = joystick.dx;
+          let dy = joystick.dy;
+          if (keys.has("arrowleft") || keys.has("a")) dx -= 1;
+          if (keys.has("arrowright") || keys.has("d")) dx += 1;
+          if (keys.has("arrowup") || keys.has("w")) dy -= 1;
+          if (keys.has("arrowdown") || keys.has("s")) dy += 1;
+
+          // If user moves with joystick or keys, clear tap-to-walk target
+          if (Math.hypot(dx, dy) > 0.08) {
+            pointer.targetX = null;
+            pointer.targetY = null;
+            pointer.targetFirework = null;
+          } else if (pointer.targetX !== null && pointer.targetY !== null) {
+            // Player directed movement (tap-to-walk without autonomous hijack)
+            const distToTarget = Math.hypot(pointer.targetX - p.x, pointer.targetY - p.y);
+            if (distToTarget > 12) {
+              dx = (pointer.targetX - p.x) / distToTarget;
+              dy = (pointer.targetY - p.y) / distToTarget;
+            } else {
+              pointer.targetX = null;
+              pointer.targetY = null;
+              pointer.targetFirework = null;
+            }
+          }
+
+          const len = Math.hypot(dx, dy);
+          if (len > 1) {
+            dx /= len;
+            dy /= len;
+          }
+
+          p.vx = dx * CONFIG.playerSpeed;
+          p.vy = dy * CONFIG.playerSpeed;
+          p.x = Math.max(CONFIG.playerRadius, Math.min(CONFIG.width - CONFIG.playerRadius, p.x + p.vx * dt));
+          p.y = Math.max(CONFIG.playTop + CONFIG.playerRadius, Math.min(CONFIG.height - CONFIG.playerRadius, p.y + p.vy * dt));
+          if (Math.abs(dx) > 0.05) p.facing = dx > 0 ? 1 : -1;
+          p.celebrateTime = Math.max(0, p.celebrateTime - dt);
+          p.animTime = Math.hypot(p.vx, p.vy) > 12 ? p.animTime + dt : 0;
+
+          // Footstep sparkles when moving
+          if (p.animTime > 0 && Math.random() < 0.28) {
+            state.particles.push({
+              x: p.x + rand(-6, 6),
+              y: p.y + 24 + rand(-2, 2),
+              vx: rand(-12, 12) - p.vx * 0.08,
+              vy: rand(-14, -4),
+              life: rand(0.2, 0.38),
+              age: 0,
+              size: rand(1.5, 3),
+              color: Math.random() < 0.6 ? "#ffd166" : "#ff9e00",
+            });
+          }
+        }
+
+        // Emit golden sparkler embers directly from the character's handheld Phuljhari
+        const sparkX = p ? p.x + p.facing * 18 : CONFIG.width / 2;
+        const sparkY = p ? p.y - 34 : CONFIG.height / 2;
+        if (Math.random() < 0.92) {
+          const a = rand(0, Math.PI * 2);
+          const s = rand(25, 95);
+          state.particles.push({
+            x: sparkX,
+            y: sparkY,
+            vx: Math.cos(a) * s,
+            vy: Math.sin(a) * s - 20,
+            life: rand(0.18, 0.42),
+            age: 0,
+            size: rand(2, 4),
+            color: Math.random() < 0.5 ? "#fff7cc" : "#ffb703",
+          });
+        }
+
+        // Update & check ignition when the character physically reaches each firework
+        for (const fw of state.stageFireworks) {
+          if (!fw.lit) {
+            const nearSparklerTip = Math.hypot(sparkX - fw.x, sparkY - fw.y) < 52;
+            const nearPlayerBody = p && Math.hypot(p.x - fw.x, p.y - fw.y) < 56;
+            if (nearSparklerTip || nearPlayerBody) {
+              igniteStageFirework(fw);
+              if (pointer.targetX !== null && Math.hypot(pointer.targetX - fw.x, pointer.targetY - fw.y) < 60) {
+                pointer.targetX = null;
+                pointer.targetY = null;
+              }
+            }
+          } else {
+            fw.timer += dt;
+            if (fw.kind === "anaar" && fw.timer < fw.duration) {
+              // Towering golden/silver fountain shower with floor-bouncing sparks
+              for (let k = 0; k < 3; k++) {
+                const spread = rand(-0.4, 0.4);
+                const spd = rand(155, 285);
+                state.particles.push({
+                  x: fw.x + rand(-4, 4),
+                  y: fw.y - 18,
+                  vx: Math.sin(spread) * spd,
+                  vy: -Math.cos(spread) * spd,
+                  life: rand(0.55, 0.98),
+                  age: 0,
+                  size: rand(2.5, 5.2),
+                  color: ["#fff6cc", "#ffd166", "#ff8c2b", "#63f5ff"][Math.floor(rand(0, 4))],
+                  floorY: fw.y + 18,
+                });
+              }
+            } else if (fw.kind === "chakri" && fw.timer < fw.duration) {
+              // Spinning ground disc emitting emerald & gold spiral sparks with clean wall bouncing
+              fw.rot += 19 * dt;
+              fw.x += fw.vx * dt;
+              fw.y += fw.vy * dt;
+
+              // Clean wall reflections:
+              if (fw.x <= 80) { fw.x = 80; fw.vx = Math.abs(fw.vx); }
+              else if (fw.x >= CONFIG.width - 80) { fw.x = CONFIG.width - 80; fw.vx = -Math.abs(fw.vx); }
+              if (fw.y <= CONFIG.playTop + 60) { fw.y = CONFIG.playTop + 60; fw.vy = Math.abs(fw.vy); }
+              else if (fw.y >= CONFIG.height - 40) { fw.y = CONFIG.height - 40; fw.vy = -Math.abs(fw.vy); }
+
+              for (let k = 0; k < 2; k++) {
+                const a = fw.rot + k * Math.PI;
+                state.particles.push({
+                  x: fw.x + Math.cos(a) * 14,
+                  y: fw.y + Math.sin(a) * 8,
+                  vx: Math.cos(a + 1.3) * 135,
+                  vy: Math.sin(a + 1.3) * 88,
+                  life: rand(0.25, 0.5),
+                  age: 0,
+                  size: rand(2.2, 4.2),
+                  color: k % 2 === 0 ? "#06d6a0" : "#ffd166",
+                });
+              }
+            } else if (fw.kind === "rocket") {
+              if (!fw.launched) {
+                fw.rocketY -= 330 * dt;
+                state.particles.push({
+                  x: fw.x + rand(-3, 3),
+                  y: fw.rocketY + 14,
+                  vx: rand(-25, 25),
+                  vy: rand(60, 120),
+                  life: rand(0.2, 0.4),
+                  age: 0,
+                  size: rand(2.5, 4.5),
+                  color: "#ffd166",
+                });
+                const targetAlt = fw.targetAltitude || 68;
+                if (fw.rocketY <= targetAlt) {
+                  fw.launched = true;
+                  sound.playCrackerBoom();
+                  state.flash = 0.42;
+                  spawnSkyFirework(fw.x, fw.rocketY);
+                  addBurst(fw.x, fw.rocketY, ["#fff6cc", "#ffd166", "#ff5e9c", "#63f5ff"], 46, 245);
+                  addSmokePuff(fw.x, fw.rocketY, 5);
+                }
+              }
+            } else if (fw.kind === "ladi" && fw.timer < fw.duration) {
+              fw.popTimer -= dt;
+              if (fw.popTimer <= 0) {
+                fw.popTimer = 0.13;
+                const px = fw.x + rand(-38, 38);
+                const py = fw.y + rand(-10, 10);
+                sound.playSkyFireworkPop();
+                state.shake = 5;
+                addBurst(px, py, ["#ffffff", "#ffe066", "#ff5733", "#ff1e56"], 16, 175);
+                addSmokePuff(px, py, 2);
+              }
+            }
+          }
+        }
+
+        if (state.allLitCountdown > 0) {
+          state.allLitCountdown -= dt;
+          if (state.allLitCountdown <= 0) {
+            showHappyDiwaliFinale();
+            return;
+          }
+        }
+
+        updateAmbientEffects(dt);
+        updateTransientEffects(dt);
+      }
+
+      function updateVictory(dt) {
+        state.time += dt;
+        state.shake = Math.max(0, state.shake - dt * 25);
+        state.flash = Math.max(0, state.flash - dt * 1.4);
+
+        const p = state.player;
+        if (p) {
+          p.vx = 0;
+          p.vy = 0;
+          p.animTime += dt;
+          p.celebrateTime = 999;
+          p.x += (CONFIG.width * 0.5 - p.x) * Math.min(1, dt * 4);
+          p.y += (CONFIG.playTop + 250 - p.y) * Math.min(1, dt * 4);
+        }
+
+        state.victoryBurstTimer -= dt;
+        if (state.victoryBurstTimer <= 0) {
+          spawnSkyFirework(rand(110, CONFIG.width - 110), rand(34, CONFIG.playTop - 18));
+          if (p) {
+            addBurst(
+              p.x + rand(-140, 140),
+              p.y + rand(-70, 30),
+              ["#fff4c2", "#ffd15c", "#ff8b2b", "#ff5e9c"],
+              18,
+              180
+            );
+          }
+          state.victoryBurstTimer = rand(0.28, 0.52);
+        }
+
+        updateAmbientEffects(dt);
+        updateTransientEffects(dt);
+      }
+
+      function update(dt) {
+        if (state.mode === "start" || state.mode === "gameover" || state.mode === "paused" || state.mode === "pre_fireworks") {
+          state.time += dt;
+          updateAmbientEffects(dt);
+          updateTransientEffects(dt);
+          return;
+        }
+        if (state.mode === "lighting_fireworks") {
+          updateFireworkLightingStage(dt);
+          return;
+        }
+        if (state.mode === "victory") {
+          updateVictory(dt);
+          return;
+        }
+        if (state.mode !== "playing") return;
+
+        state.time += dt;
+        state.shake = Math.max(0, state.shake - dt * 25);
+        state.flash = Math.max(0, state.flash - dt * 2.4);
+
+        updateAmbientEffects(dt);
+
+        // Player Movement via Bottom Virtual Thumbstick or WASD / Arrow Keys
+        const p = state.player;
+        let dx = joystick.dx;
+        let dy = joystick.dy;
+        if (keys.has("arrowleft") || keys.has("a")) dx -= 1;
+        if (keys.has("arrowright") || keys.has("d")) dx += 1;
+        if (keys.has("arrowup") || keys.has("w")) dy -= 1;
+        if (keys.has("arrowdown") || keys.has("s")) dy += 1;
+
+        const len = Math.hypot(dx, dy);
+        if (len > 1) {
+          dx /= len;
+          dy /= len;
+        }
+
+        p.vx = dx * CONFIG.playerSpeed;
+        p.vy = dy * CONFIG.playerSpeed;
+        p.x = Math.max(CONFIG.playerRadius, Math.min(CONFIG.width - CONFIG.playerRadius, p.x + p.vx * dt));
+        p.y = Math.max(CONFIG.playTop + CONFIG.playerRadius, Math.min(CONFIG.height - CONFIG.playerRadius, p.y + p.vy * dt));
+        if (Math.abs(dx) > 0.05) p.facing = dx > 0 ? 1 : -1;
+
+        p.invincible = Math.max(0, p.invincible - dt);
+        p.celebrateTime = Math.max(0, p.celebrateTime - dt);
+        p.hurtTime = Math.max(0, p.hurtTime - dt);
+        p.introTime = Math.max(0, p.introTime - dt);
+        p.animTime = Math.hypot(p.vx, p.vy) > 12 ? p.animTime + dt : 0;
+        if (p.animTime > 0 && Math.random() < 0.28) {
+          state.particles.push({
+            x: p.x + rand(-6, 6),
+            y: p.y + 24 + rand(-2, 2),
+            vx: rand(-12, 12) - p.vx * 0.08,
+            vy: rand(-14, -4),
+            life: rand(0.2, 0.38),
+            age: 0,
+            size: rand(1.5, 3),
+            color: Math.random() < 0.6 ? "#ffd166" : "#ff9e00",
+          });
+        }
+
+        // Diyas Pickup Check
+        for (let i = state.diyas.length - 1; i >= 0; i--) {
+          const d = state.diyas[i];
+          d.spawn = Math.min(1, d.spawn + dt * 3);
+          if (Math.hypot(p.x - d.x, p.y - d.y) < CONFIG.playerRadius + CONFIG.diyaRadius) {
+            state.score += CONFIG.diyaPoints;
+            p.celebrateTime = PLAYER_CELEBRATE_TIME;
+            state.flash = Math.min(0.45, state.flash + 0.25);
+
+            sound.playDiyaChime(Math.floor(state.score / CONFIG.diyaPoints));
+            addBurst(d.x, d.y, ["#fff3b0", "#ffd147", "#ff8c2b", "#ff5470"], 34, 250);
+            addLightRing(d.x, d.y, "rgba(255, 215, 110, 1)", 120);
+            addPopup(d.x, d.y - 10, `+${CONFIG.diyaPoints}`);
+
+            state.diyas.splice(i, 1);
+            spawnDiya();
+
+            if (isFestivalMode() && state.score >= CONFIG.festivalTargetScore) {
+              unlockFireworksPrompt();
+              return;
+            }
+
+            const desiredCrackers = Math.min(
+              CONFIG.crackerMaxCount,
+              CONFIG.crackerStartCount + Math.floor(state.score / CONFIG.pointsPerNewCracker)
+            );
+            while (state.crackers.length < desiredCrackers) spawnCracker();
+            updateHUD();
+          }
+        }
+
+        // Bouncing Firecrackers & Directional Fuse Sparks
+        for (const c of state.crackers) {
+          c.x += c.vx * dt;
+          c.y += c.vy * dt;
+          c.rot += c.spin * dt;
+
+          if (c.x < CONFIG.crackerRadius || c.x > CONFIG.width - CONFIG.crackerRadius) {
+            c.vx *= -1;
+            c.x = Math.max(CONFIG.crackerRadius, Math.min(CONFIG.width - CONFIG.crackerRadius, c.x));
+          }
+          if (c.y < CONFIG.playTop + CONFIG.crackerRadius || c.y > CONFIG.height - CONFIG.crackerRadius) {
+            c.vy *= -1;
+            c.y = Math.max(CONFIG.playTop + CONFIG.crackerRadius, Math.min(CONFIG.height - CONFIG.crackerRadius, c.y));
+          }
+
+          if (Math.random() < 0.72) {
+            const fuseA = c.rot + c.type.fuseAngle;
+            const fx = c.x + Math.cos(fuseA) * c.type.fuseDist;
+            const fy = c.y + Math.sin(fuseA) * c.type.fuseDist;
+            state.particles.push({
+              x: fx,
+              y: fy,
+              vx: Math.cos(fuseA) * rand(25, 75) + rand(-25, 25),
+              vy: Math.sin(fuseA) * rand(25, 75) + rand(-25, 25),
+              life: rand(0.16, 0.36),
+              age: 0,
+              size: rand(2, 4.2),
+              color: Math.random() < 0.5 ? "#fff3a1" : "#ff6b35",
+            });
+          }
+
+          if (p.invincible <= 0 && Math.hypot(p.x - c.x, p.y - c.y) < CONFIG.playerRadius + CONFIG.crackerRadius - 4) {
+            state.lives -= 1;
+            p.invincible = CONFIG.invincibleTime;
+            p.hurtTime = PLAYER_HURT_TIME;
+            p.celebrateTime = 0;
+            state.shake = 14;
+            state.flash = 0.55;
+
+            sound.playCrackerBoom();
+            addBurst(c.x, c.y, ["#ffffff", "#ffe066", "#ff5733", "#ff1e56"], 48, 300);
+            addSmokePuff(c.x, c.y, 6);
+            addLightRing(c.x, c.y, "rgba(255, 95, 65, 1)", 150);
+            addPopup(p.x, p.y - 16, "BOOM!", "#ff6b6b");
+
+            updateHUD();
+            if (state.lives <= 0) {
+              endGame();
+              return;
+            }
+          }
+        }
+
+        updateTransientEffects(dt);
+      }
+
+      // ------------ RENDERING HELPERS ------------
+      function drawRangoli(cx, cy, r) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(1, 0.54);
+        ctx.globalAlpha = 0.24;
+
+        ctx.strokeStyle = "#ffd166";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const petals = 12;
+        for (let i = 0; i < petals; i++) {
+          ctx.save();
+          ctx.rotate((i / petals) * Math.PI * 2);
+          ctx.fillStyle = i % 2 === 0 ? "#ff5e9c" : "#ff9e2c";
+          ctx.beginPath();
+          ctx.ellipse(r * 0.56, 0, r * 0.34, r * 0.14, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        ctx.fillStyle = "#ffe66d";
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawMarigoldGarland(y) {
+        ctx.save();
+        const segments = 8;
+        const segW = CONFIG.width / segments;
+        for (let i = 0; i < segments; i++) {
+          const x1 = i * segW;
+          const x2 = (i + 1) * segW;
+          const midX = (x1 + x2) / 2;
+          const sway = Math.sin(state.time * 2.2 + i) * 3;
+
+          ctx.strokeStyle = "#ffd166";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(x1, y);
+          ctx.quadraticCurveTo(midX, y + 18 + sway, x2, y);
+          ctx.stroke();
+
+          for (let t = 0.15; t <= 0.85; t += 0.175) {
+            const bx = (1 - t) * (1 - t) * x1 + 2 * (1 - t) * t * midX + t * t * x2;
+            const by = (1 - t) * (1 - t) * y + 2 * (1 - t) * t * (y + 18 + sway) + t * t * y;
+            ctx.fillStyle = t % 0.35 < 0.18 ? "#ff8c24" : "#ffd23f";
+            ctx.beginPath();
+            ctx.arc(bx, by, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+
+      function drawCourtyardScene() {
+        const W = CONFIG.width;
+        const H = CONFIG.height;
+        const top = CONFIG.playTop;
+
+        const sky = ctx.createLinearGradient(0, 0, 0, top + 20);
+        sky.addColorStop(0, "#120422");
+        sky.addColorStop(0.6, "#2c0d45");
+        sky.addColorStop(1, "#521959");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, top);
+
+        // Glowing Crescent Moon
+        ctx.save();
+        ctx.fillStyle = "rgba(255, 240, 185, 0.9)";
+        ctx.beginPath();
+        ctx.arc(860, 42, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#1b0730";
+        ctx.beginPath();
+        ctx.arc(866, 38, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Haveli Silhouette Skyline & Cusped Mughal Arches
+        ctx.fillStyle = "#220936";
+        ctx.fillRect(0, 56, W, top - 56);
+
+        for (let x = 0; x < W; x += 120) {
+          ctx.fillStyle = "#1a062b";
+          ctx.beginPath();
+          ctx.arc(x + 60, 56, 26, Math.PI, 0);
+          ctx.fill();
+
+          ctx.fillStyle = "rgba(255, 195, 85, 0.78)";
+          ctx.beginPath();
+          ctx.roundRect(x + 48, 72, 24, 32, [12, 12, 2, 2]);
+          ctx.fill();
+
+          const sway = Math.sin(state.time * 2.2 + x) * 2.5;
+          ctx.strokeStyle = "#ffd166";
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(x + 20, 42);
+          ctx.lineTo(x + 20 + sway, 62);
+          ctx.stroke();
+
+          ctx.fillStyle = "#ff7b29";
+          ctx.beginPath();
+          ctx.arc(x + 20 + sway, 68, 7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Terracotta Courtyard Floor
+        const floor = ctx.createLinearGradient(0, top, 0, H);
+        floor.addColorStop(0, "#3b1145");
+        floor.addColorStop(0.5, "#280934");
+        floor.addColorStop(1, "#180421");
+        ctx.fillStyle = floor;
+        ctx.fillRect(0, top, W, H - top);
+
+        // Perspective Tile Grid
+        ctx.strokeStyle = "rgba(255, 200, 110, 0.055)";
+        ctx.lineWidth = 1;
+        for (let y = top + 40; y < H; y += 52) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(W, y);
+          ctx.stroke();
+        }
+        for (let x = 0; x <= W; x += 96) {
+          ctx.beginPath();
+          ctx.moveTo(x, top);
+          ctx.lineTo((x - W / 2) * 1.35 + W / 2, H);
+          ctx.stroke();
+        }
+
+        // 5 Festive Multi-Layered Lotus Rangoli Mandalas
+        const rangoliSpots = [
+          { x: W * 0.5, y: (H + top) * 0.54, r: 95 },
+          { x: W * 0.18, y: top + 95, r: 52 },
+          { x: W * 0.82, y: top + 95, r: 52 },
+          { x: W * 0.18, y: H - 78, r: 56 },
+          { x: W * 0.82, y: H - 78, r: 56 },
+        ];
+        for (const spot of rangoliSpots) {
+          drawRangoli(spot.x, spot.y, spot.r);
+        }
+
+        drawMarigoldGarland(top);
+      }
+
+      function drawBackground() {
+        drawCourtyardScene();
+
+        // Sky Fireworks in the top 125px sky strip
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (const sp of state.skyParticles) {
+          ctx.globalAlpha = Math.max(0, 1 - sp.age / sp.life);
+          ctx.fillStyle = sp.color;
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Floating Ambient Courtyard Embers
+        for (const l of state.ambientLights) {
+          const a = 0.25 + 0.25 * Math.sin(state.time * 3 + l.phase);
+          ctx.globalAlpha = a;
+          ctx.fillStyle = l.hue;
+          ctx.beginPath();
+          ctx.arc(l.x, l.y, l.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+        ctx.globalAlpha = 1;
+      }
+
+      function drawDiya(d) {
+        const scale = 0.3 + 0.7 * d.spawn;
+        const flicker = Math.sin(state.time * 11 + d.phase) * 1.6;
+
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.scale(scale, scale);
+
+        const glow = ctx.createRadialGradient(0, -4, 2, 0, -4, 34);
+        glow.addColorStop(0, "rgba(255, 215, 95, 0.72)");
+        glow.addColorStop(0.5, "rgba(255, 130, 35, 0.28)");
+        glow.addColorStop(1, "rgba(255, 130, 35, 0)");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, -4, 34, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Clay Bowl
+        ctx.fillStyle = "#b83b1b";
+        ctx.strokeStyle = "#ffd166";
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(-16, 2);
+        ctx.quadraticCurveTo(0, 18, 16, 2);
+        ctx.lineTo(12, -2);
+        ctx.lineTo(-12, -2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Flame
+        ctx.fillStyle = "#ff9924";
+        ctx.beginPath();
+        ctx.moveTo(0, -18 + flicker);
+        ctx.quadraticCurveTo(-8, -6, 0, 0);
+        ctx.quadraticCurveTo(8, -6, 0, -18 + flicker);
+        ctx.fill();
+
+        ctx.fillStyle = "#fff7c2";
+        ctx.beginPath();
+        ctx.moveTo(0, -12 + flicker * 0.6);
+        ctx.quadraticCurveTo(-4, -5, 0, -1);
+        ctx.quadraticCurveTo(4, -5, 0, -12 + flicker * 0.6);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function drawCracker(c) {
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.rot);
+
+        if (c.type.key === "crackerBox") {
+          ctx.fillStyle = "#dc2626";
+          ctx.strokeStyle = "#fde047";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(-14, -14, 28, 28, 5);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = "#fbbf24";
+          ctx.beginPath();
+          ctx.arc(0, 0, 6, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (c.type.key === "crackerRocket") {
+          ctx.fillStyle = "#e11d48";
+          ctx.strokeStyle = "#fde047";
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.roundRect(-8, -14, 16, 26, 3);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = "#fbbf24";
+          ctx.beginPath();
+          ctx.moveTo(-11, -14);
+          ctx.lineTo(0, -26);
+          ctx.lineTo(11, -14);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          for (let ox = -9; ox <= 9; ox += 9) {
+            ctx.fillStyle = "#ef4444";
+            ctx.strokeStyle = "#facc15";
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.roundRect(ox - 4, -13, 8, 26, 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.fillStyle = "#fde047";
+          ctx.fillRect(-14, -3, 28, 6);
+        }
+
+        // Fuse Cord
+        ctx.strokeStyle = "#fef08a";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, -14);
+        ctx.lineTo(0, -22);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function drawStageFirework(fw) {
+        ctx.save();
+        ctx.translate(fw.x, fw.y);
+
+        // Pulsing golden ring under unlit fireworks so the user knows where to touch/drag
+        if (!fw.lit) {
+          const pulse = 1 + Math.sin(state.time * 6 + fw.id) * 0.12;
+          ctx.strokeStyle = "rgba(255, 220, 115, 0.72)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.ellipse(0, 14, 26 * pulse, 11 * pulse, 0, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.fillStyle = "#fff3a1";
+          ctx.beginPath();
+          ctx.arc(0, -24, 3.6 * pulse, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (fw.kind === "anaar") {
+          const g = ctx.createLinearGradient(-16, 0, 16, 0);
+          g.addColorStop(0, "#b45309");
+          g.addColorStop(0.5, "#fbbf24");
+          g.addColorStop(1, "#78350f");
+          ctx.fillStyle = g;
+          ctx.strokeStyle = "#fff3b0";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(-18, 16);
+          ctx.lineTo(-7, -18);
+          ctx.lineTo(7, -18);
+          ctx.lineTo(18, 16);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else if (fw.kind === "chakri") {
+          ctx.rotate(fw.rot);
+          ctx.fillStyle = "#06d6a0";
+          ctx.strokeStyle = "#ffd166";
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, 16, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#ef476f";
+          ctx.beginPath();
+          ctx.arc(0, 0, 6, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (fw.kind === "rocket") {
+          ctx.fillStyle = "#92400e";
+          ctx.strokeStyle = "#fcd34d";
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.roundRect(-7, 0, 14, 20, 3);
+          ctx.fill();
+          ctx.stroke();
+
+          if (!fw.launched) {
+            const ry = fw.rocketY - fw.y;
+            ctx.save();
+            ctx.translate(0, ry);
+            ctx.fillStyle = "#dc2626";
+            ctx.strokeStyle = "#fde047";
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.roundRect(-6, -18, 12, 18, 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = "#fbbf24";
+            ctx.beginPath();
+            ctx.moveTo(-8, -18);
+            ctx.lineTo(0, -30);
+            ctx.lineTo(8, -18);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          }
+        } else if (fw.kind === "ladi") {
+          for (let ox = -30; ox <= 30; ox += 10) {
+            ctx.fillStyle = "#dc2626";
+            ctx.strokeStyle = "#fde047";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.roundRect(ox - 4, -12, 8, 24, 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.fillStyle = "#fbbf24";
+          ctx.fillRect(-34, -3, 68, 6);
+        }
+
+        ctx.restore();
+      }
+
+      function drawSparklerCursor() {
+        // If player tapped a firework or floor target, draw an elegant glowing target beacon
+        if (pointer.targetX !== null && pointer.targetY !== null) {
+          ctx.save();
+          const pulse = 1 + Math.sin(state.time * 8) * 0.16;
+          ctx.strokeStyle = "rgba(255, 215, 0, 0.88)";
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.ellipse(pointer.targetX, pointer.targetY + 8, 22 * pulse, 10 * pulse, 0, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.fillStyle = "#fff7cc";
+          ctx.beginPath();
+          ctx.arc(pointer.targetX, pointer.targetY - 12, 3.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Draw subtle cursor ring on hover
+        if (pointer.hover && pointer.active) {
+          ctx.save();
+          ctx.translate(pointer.x, pointer.y);
+          ctx.strokeStyle = "rgba(255, 220, 100, 0.65)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, 10, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      function getPlayerHopOffset(p) {
+        if (p.introTime > 0) {
+          const progress = 1 - p.introTime / PLAYER_INTRO_TIME;
+          return Math.sin(progress * Math.PI) * PLAYER_INTRO_JUMP_HEIGHT;
+        }
+        if (p.celebrateTime > 0) {
+          return Math.abs(Math.sin(state.time * 12)) * 12;
+        }
+        if (p.animTime > 0) {
+          return Math.abs(Math.sin(p.animTime * 15)) * 4.2;
+        }
+        return 0;
+      }
+
+      // Expressive Character: Full Anime Hero or Custom Photo Avatar
+      function drawPlayer(p) {
+        if (p.invincible > 0 && Math.floor(p.invincible * 12) % 2 === 0) {
+          ctx.globalAlpha = 0.45;
+        }
+
+        const hop = getPlayerHopOffset(p);
+        const isHurt = p.hurtTime > 0;
+        const isCelebrate = p.celebrateTime > 0;
+        const isMoving = p.animTime > 0;
+        const step = isMoving ? Math.sin(p.animTime * 15) : 0;
+        const sway = isMoving ? Math.cos(p.animTime * 15) * 3.2 : Math.sin(state.time * 2.6) * 1.2;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+
+        // Warm Golden Festive Aura Under Player
+        const aura = ctx.createRadialGradient(0, 4, 4, 0, 4, 44);
+        aura.addColorStop(0, "rgba(255, 210, 100, 0.52)");
+        aura.addColorStop(0.65, "rgba(255, 175, 45, 0.16)");
+        aura.addColorStop(1, "rgba(255, 140, 20, 0)");
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(0, 4, 44, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ground Contact Shadow
+        const shadowScale = Math.max(0.6, 1 - (hop / PLAYER_INTRO_JUMP_HEIGHT) * 0.28);
+        ctx.fillStyle = "rgba(10, 2, 18, 0.55)";
+        ctx.beginPath();
+        ctx.ellipse(0, 26, 23 * shadowScale, 8 * shadowScale, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Player Name Tag beneath Avatar (drawn un-flipped so text is always crisp and upright!)
+        if (state.playerName) {
+          ctx.save();
+          ctx.font = "bold 10px 'Plus Jakarta Sans', sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillStyle = "rgba(22, 6, 32, 0.82)";
+          const tw = ctx.measureText(state.playerName).width;
+          ctx.beginPath();
+          ctx.roundRect(-tw / 2 - 6, 31, tw + 12, 14.5, 4);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255, 209, 102, 0.7)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.fillStyle = "#ffd166";
+          ctx.fillText(state.playerName, 0, 42.5);
+          ctx.restore();
+        }
+
+        ctx.translate(0, -hop);
+
+        // ================= FULL ANIME HERO SPRITE MODE =================
+        if (state.characterMode === "anime" && state.fullAnimeImg && state.fullAnimeImg.complete && state.fullAnimeImg.naturalWidth > 0) {
+          const runTilt = isMoving ? p.facing * (Math.sin(p.animTime * 14) * 0.042 + p.vx * 0.00016) : 0;
+          ctx.scale(p.facing, 1);
+          ctx.rotate(runTilt);
+
+          if (isHurt) {
+            ctx.translate(-4, -2);
+            ctx.rotate(-0.08);
+          }
+
+          // Dynamic stride squash & stretch
+          const squash = isMoving ? 1 + Math.abs(Math.sin(p.animTime * 14)) * 0.035 : 1 + Math.sin(state.time * 2.5) * 0.015;
+          const stretch = 2 - squash;
+
+          const spriteH = 92;
+          const spriteW = spriteH * (622 / 1283); // ~44.5px
+
+          // Draw full anime character sprite (centered on body vertical axis, feet touching ground at y=26)
+          ctx.drawImage(
+            state.fullAnimeImg,
+            (-spriteW / 2) * stretch,
+            26 - spriteH * squash,
+            spriteW * stretch,
+            spriteH * squash
+          );
+
+          // Golden sparkler flourish at sparkler tip during Stage 2 lighting or celebration
+          if (state.mode === "lighting_fireworks" || isCelebrate) {
+            const sparkRelX = 8;
+            const sparkRelY = 26 - spriteH * 0.66;
+            ctx.save();
+            ctx.fillStyle = "#fff7cc";
+            ctx.shadowColor = "#ffd700";
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.arc(sparkRelX, sparkRelY, 3.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Animated cross gleam
+            ctx.strokeStyle = "rgba(255, 240, 160, 0.9)";
+            ctx.lineWidth = 1.6;
+            const rayLen = 5 + Math.sin(state.time * 22) * 2.8;
+            ctx.beginPath();
+            ctx.moveTo(sparkRelX - rayLen, sparkRelY); ctx.lineTo(sparkRelX + rayLen, sparkRelY);
+            ctx.moveTo(sparkRelX, sparkRelY - rayLen); ctx.lineTo(sparkRelX, sparkRelY + rayLen);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // Joyful stars around her head during victory/celebration
+          if (isCelebrate) {
+            ctx.save();
+            ctx.fillStyle = "#ffe066";
+            for (let s = 0; s < 4; s++) {
+              const starAngle = state.time * 6 + s * (Math.PI / 2);
+              const starDist = 28 + Math.sin(state.time * 12 + s) * 6;
+              const sx = Math.cos(starAngle) * starDist;
+              const sy = -35 + Math.sin(starAngle) * (starDist * 0.5);
+              ctx.beginPath();
+              ctx.arc(sx, sy, 2.2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+        } else {
+          // ================= PROCEDURAL COMPOSITE / REAL PHOTO MODE =================
+          ctx.scale(p.facing, 1);
+
+          if (state.outfit === "kurta") {
+            // ================= KURTA / SHERWANI OUTFIT =================
+            // 1. Churidar Pyjama Legs & Embroidered Mojari Shoes
+            ctx.fillStyle = "#fff8e7";
+            ctx.beginPath();
+            ctx.roundRect(-6.5 + step * 4, 10, 5.5, 16, 2.5);
+            ctx.roundRect(1.5 - step * 4, 10, 5.5, 16, 2.5);
+            ctx.fill();
+
+            // Golden Mojaris
+            ctx.fillStyle = "#ffd166";
+            ctx.beginPath();
+            ctx.ellipse(-4 + step * 4, 26, 4.5, 2.8, 0, 0, Math.PI * 2);
+            ctx.ellipse(4 - step * 4, 26, 4.5, 2.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Royal Crimson-and-Gold Silk Sherwani Kurta
+            const kurtaGrad = ctx.createLinearGradient(0, -14, 0, 16);
+            kurtaGrad.addColorStop(0, "#d91c3d");
+            kurtaGrad.addColorStop(0.7, "#990b24");
+            kurtaGrad.addColorStop(1, "#660515");
+            ctx.fillStyle = kurtaGrad;
+            ctx.beginPath();
+            ctx.moveTo(-10.5, -14);
+            ctx.lineTo(10.5, -14);
+            ctx.lineTo(12 + sway * 0.35, 13);
+            ctx.lineTo(-12 + sway * 0.35, 13);
+            ctx.closePath();
+            ctx.fill();
+
+            // Gold Mandarin Collar & Central Zari Buttons
+            ctx.fillStyle = "#ffd166";
+            ctx.fillRect(-1.2, -14, 2.4, 26);
+            for (let b = -10; b <= 8; b += 4.5) {
+              ctx.beginPath();
+              ctx.arc(0, b, 1.2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // Gold Hem Border
+            ctx.strokeStyle = "#ffd166";
+            ctx.lineWidth = 2.4;
+            ctx.beginPath();
+            ctx.moveTo(-12 + sway * 0.35, 12.5);
+            ctx.lineTo(12 + sway * 0.35, 12.5);
+            ctx.stroke();
+
+            // 3. Royal Gold Stole / Dupatta Draped Over Shoulder
+            ctx.fillStyle = "rgba(255, 215, 0, 0.88)";
+            ctx.beginPath();
+            ctx.moveTo(-9.5, -13.5);
+            ctx.lineTo(-5, -13.5);
+            ctx.lineTo(-4 - sway * 0.45, 14);
+            ctx.lineTo(-9 - sway * 0.45, 14);
+            ctx.closePath();
+            ctx.fill();
+          } else {
+            // ================= LEHENGA / CHOLI OUTFIT (DEFAULT) =================
+            // 1. Flowing Braided Hair (Behind Back) Adorned with Jasmine Gajra Flowers
+            ctx.fillStyle = "#180c14";
+            ctx.beginPath();
+            ctx.moveTo(-6, -24);
+            ctx.quadraticCurveTo(-18 - sway * 0.5, -8, -14 - sway * 0.9, 10);
+            ctx.quadraticCurveTo(-8, 4, -3, -20);
+            ctx.fill();
+
+            ctx.fillStyle = "#fff9e6";
+            for (let i = 0; i < 3; i++) {
+              ctx.beginPath();
+              ctx.arc(-8 - i * 2.2 - sway * 0.25, -18 + i * 5.5, 2.2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // 2. Golden Payal / Sandals
+            ctx.fillStyle = "#ffd166";
+            ctx.beginPath();
+            ctx.ellipse(-6 + step * 4.5, 25.5, 5, 2.5, 0, 0, Math.PI * 2);
+            ctx.ellipse(6 - step * 4.5, 25.5, 5, 2.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 3. Flared Crimson Silk Lehenga Skirt
+            const skirtGrad = ctx.createLinearGradient(0, -3, 0, 25);
+            skirtGrad.addColorStop(0, "#e6195a");
+            skirtGrad.addColorStop(0.62, "#b80d48");
+            skirtGrad.addColorStop(1, "#7a062f");
+            ctx.fillStyle = skirtGrad;
+            ctx.beginPath();
+            ctx.moveTo(-9.5, -2);
+            ctx.lineTo(9.5, -2);
+            ctx.quadraticCurveTo(20 + sway * 0.35, 12, 22 + sway * 0.55, 23.5);
+            ctx.quadraticCurveTo(0, 27.5, -22 + sway * 0.55, 23.5);
+            ctx.quadraticCurveTo(-20 + sway * 0.35, 12, -9.5, -2);
+            ctx.closePath();
+            ctx.fill();
+
+            // Gold Kalis & Border
+            ctx.strokeStyle = "rgba(255, 209, 102, 0.42)";
+            ctx.lineWidth = 1.25;
+            for (let k = -2; k <= 2; k++) {
+              ctx.beginPath();
+              ctx.moveTo(k * 3.2, -1);
+              ctx.lineTo(k * 7.5 + sway * 0.4, 22.5);
+              ctx.stroke();
+            }
+
+            ctx.strokeStyle = "#ffd166";
+            ctx.lineWidth = 3.6;
+            ctx.beginPath();
+            ctx.moveTo(-21 + sway * 0.55, 22);
+            ctx.quadraticCurveTo(0, 26, 21 + sway * 0.55, 22);
+            ctx.stroke();
+
+            // 4. Fitted Choli & Dupatta
+            ctx.fillStyle = "#0f8a77";
+            ctx.beginPath();
+            ctx.roundRect(-10, -14, 20, 12.5, 4);
+            ctx.fill();
+
+            ctx.fillStyle = "#ffd166";
+            ctx.fillRect(-10, -3.2, 20, 3.2);
+
+            ctx.fillStyle = "rgba(255, 195, 50, 0.82)";
+            ctx.beginPath();
+            ctx.moveTo(-10, -13.5);
+            ctx.lineTo(9.5, -2.5);
+            ctx.lineTo(5.5, -0.5);
+            ctx.lineTo(-10.5, -9.5);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = "rgba(255, 180, 40, 0.58)";
+            ctx.beginPath();
+            ctx.moveTo(-9.5, -12);
+            ctx.quadraticCurveTo(-24 - sway * 0.85, -4, -22 - sway * 1.1, 9);
+            ctx.lineTo(-15 - sway * 0.65, 11);
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          // Arms, Golden Bangles & Stage 2 Handheld Sparkler
+          const armRaise = isCelebrate ? -7 : 0;
+          ctx.fillStyle = "#d9915b";
+          ctx.beginPath();
+          ctx.roundRect(-14.5, -12 - step * 2.5 + armRaise, 4.6, 12, 2.3);
+          ctx.roundRect(10, -12 + step * 2.5 + armRaise, 4.6, 12, 2.3);
+          ctx.fill();
+
+          ctx.fillStyle = "#ffd166";
+          ctx.fillRect(-14.8, -2.5 - step * 2.5 + armRaise, 5.2, 3.2);
+          ctx.fillRect(9.8, -2.5 + step * 2.5 + armRaise, 5.2, 3.2);
+
+          if (state.mode === "lighting_fireworks") {
+            ctx.strokeStyle = "#cbd5e1";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(12.5, -1 + step * 2.5);
+            ctx.lineTo(24, -10 + step * 2.5);
+            ctx.stroke();
+
+            ctx.fillStyle = "#fff7cc";
+            ctx.beginPath();
+            ctx.arc(25, -11 + step * 2.5, 4.8, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // ================= HEAD & CUSTOM FACE =================
+          ctx.save();
+          ctx.translate(0, -24);
+          if (isHurt) ctx.rotate(-0.18);
+
+          if (state.customFaceImg && state.customFaceImg.complete && state.customFaceImg.naturalWidth > 0) {
+            // Render uploaded photo face inside circular frame
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(0, 0, 11, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.drawImage(state.customFaceImg, -11, -11, 22, 22);
+            ctx.restore();
+
+            // Golden jewel border around photo
+            ctx.strokeStyle = "#ffd166";
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.arc(0, 0, 11, 0, Math.PI * 2);
+            ctx.stroke();
+          } else {
+            // Default expressive vector face
+            ctx.fillStyle = "#d9915b";
+            ctx.beginPath();
+            ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#180c14";
+            ctx.beginPath();
+            ctx.arc(0, -1.8, 11, Math.PI * 0.92, Math.PI * 2.08);
+            ctx.fill();
+
+            ctx.fillStyle = "#ffd166";
+            ctx.beginPath();
+            ctx.arc(3.2, -6.5, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#ffd166";
+            ctx.beginPath();
+            ctx.arc(-5.2, 2.5, 3.2, Math.PI, 0);
+            ctx.fill();
+            ctx.fillRect(-6.8, 2.5, 3.2, 2.2);
+
+            if (isHurt) {
+              ctx.strokeStyle = "#180c14";
+              ctx.lineWidth = 1.6;
+              ctx.beginPath();
+              ctx.moveTo(-1, -1.5); ctx.lineTo(2, 0); ctx.lineTo(-1, 1.5);
+              ctx.moveTo(7.5, -1.5); ctx.lineTo(4.5, 0); ctx.lineTo(7.5, 1.5);
+              ctx.stroke();
+            } else {
+              ctx.fillStyle = "#180c14";
+              ctx.beginPath();
+              ctx.arc(1.2, -0.5, 1.8, 0, Math.PI * 2);
+              ctx.arc(6.4, -0.5, 1.8, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.strokeStyle = "#8c2d38";
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.arc(3.8, 3.2, 2.8, 0.15 * Math.PI, 0.85 * Math.PI);
+              ctx.stroke();
+            }
+          }
+          ctx.restore();
+        }
+
+        ctx.restore();
+        ctx.globalAlpha = 1;
+      }
+
+      // ------------ MASTER RENDER PIPELINE ------------
+      function render() {
+        ctx.save();
+        if (state.shake > 0) {
+          ctx.translate(rand(-state.shake, state.shake), rand(-state.shake, state.shake));
+        }
+
+        drawBackground();
+
+        // Expanding Shockwave Light Rings
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (const rg of state.rings) {
+          const alpha = Math.max(0, 1 - rg.age / rg.life);
+          ctx.strokeStyle = rg.color;
+          ctx.globalAlpha = alpha * 0.75;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(rg.x, rg.y, rg.radius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        for (const d of state.diyas) drawDiya(d);
+        for (const c of state.crackers) drawCracker(c);
+        for (const fw of state.stageFireworks) drawStageFirework(fw);
+        if (state.player) drawPlayer(state.player);
+
+        // Volumetric Smoke Puffs
+        for (const sm of state.smokePuffs) {
+          const a = Math.max(0, (1 - sm.age / sm.life) * 0.28);
+          ctx.fillStyle = `rgba(215, 200, 230, ${a})`;
+          ctx.beginPath();
+          ctx.arc(sm.x, sm.y, sm.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Additive Particle Sparks
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (const pt of state.particles) {
+          ctx.globalAlpha = Math.max(0, 1 - pt.age / pt.life);
+          ctx.fillStyle = pt.color;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+        ctx.globalAlpha = 1;
+
+        if (state.mode === "lighting_fireworks") {
+          drawSparklerCursor();
+        }
+
+        // Floating Score Popups
+        ctx.font = "800 18px 'Plus Jakarta Sans', sans-serif";
+        ctx.textAlign = "center";
+        for (const pp of state.popups) {
+          ctx.globalAlpha = Math.max(0, 1 - pp.age / pp.life);
+          ctx.fillStyle = pp.color;
+          ctx.fillText(pp.text, pp.x, pp.y);
+        }
+        ctx.globalAlpha = 1;
+
+        // Warm Screen Flash
+        if (state.flash > 0) {
+          ctx.fillStyle = `rgba(255, 230, 150, ${state.flash * 0.35})`;
+          ctx.fillRect(0, 0, CONFIG.width, CONFIG.height);
+        }
+
+        ctx.restore();
+      }
+
+      // ------------ ANIMATION LOOP ------------
+      let lastTime = performance.now();
+      function loop(now) {
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+        update(dt);
+        render();
+        requestAnimationFrame(loop);
+      }
+
+      initAmbientLights();
+      resetPlayer();
+      updateHUD();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
