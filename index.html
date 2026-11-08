@@ -742,13 +742,13 @@
 
       <p>Collect glowing diyas. Dodge firecrackers. Light up Diwali!</p>
 
-      <!-- AVATAR PROFILE: APPU ANIME HERO -->
+      <!-- AVATAR PROFILE: Ann ANIME HERO -->
       <div class="avatar-setup-card" style="display:flex; align-items:center; justify-content:center; gap:16px;">
         <div class="avatar-face-circle" id="avatar-preview-circle">
-          <img id="avatar-img-preview" src="avatar_face_anime.png" alt="Appu" class="avatar-img-preview" />
+          <img id="avatar-img-preview" src="avatar_face_anime.png" alt="Ann" class="avatar-img-preview" />
         </div>
         <div class="avatar-info-col" style="text-align:left;">
-          <div style="font-size:20px; font-weight:800; color:#ffd166; letter-spacing:0.5px;">Appu</div>
+          <div style="font-size:20px; font-weight:800; color:#ffd166; letter-spacing:0.5px;">Ann</div>
         </div>
       </div>
 
@@ -779,7 +779,7 @@
     <div id="victory-screen" class="overlay victory-overlay hidden">
       <div class="victory-eyebrow">FESTIVAL CELEBRATION COMPLETE</div>
       <div class="victory-emblem" aria-hidden="true">✦ ✨ ✦</div>
-      <h1 id="victory-heading">HAPPY DIWALI, APPU!</h1>
+      <h1 id="victory-heading">HAPPY DIWALI, Ann!</h1>
       <div id="victory-recipient" class="victory-recipient-badge">Wishing joy & radiance to you and your Family!</div>
       <p id="victory-message" class="victory-message">Every diya makes your Diwali brighter!</p>
       <div class="victory-score">
@@ -1112,7 +1112,7 @@
       const state = {
         mode: "start", // "start" | "playing" | "paused" | "pre_fireworks" | "lighting_fireworks" | "victory" | "gameover"
         gameMode: selectedMode,
-        playerName: "Appu",
+        playerName: "Ann",
         outfit: "lehenga", // "lehenga" | "kurta"
         characterMode: "anime", // "anime" (full-body anime hero) | "composite" (custom circular photo face)
         fullAnimeImg: null,
@@ -1239,7 +1239,7 @@
       if (playerNameInput) {
         playerNameInput.addEventListener("input", () => {
           const val = playerNameInput.value.trim();
-          state.playerName = val || "Appu";
+          state.playerName = val || "Ann";
         });
       }
 
@@ -1620,7 +1620,7 @@
 
       function startGame() {
         sound.init();
-        state.playerName = "Appu";
+        state.playerName = "Ann";
         state.mode = "playing";
         state.gameMode = selectedMode;
         state.score = 0;
